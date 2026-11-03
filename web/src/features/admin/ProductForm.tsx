@@ -17,7 +17,7 @@ import type { ProductWithRefs } from '../../lib/types';
 
 const NEW_TRADE = '__new__';
 const MAX_IMAGES = 8;
-const SIZE_HINTS = ['S', 'M', 'L', 'XL', 'XXL', 'Free Size'];
+const SIZE_HINTS = ['S', 'M', 'L', 'XL', 'XXL', '80', '85', '90', '95', '100', 'Free Size'];
 
 type Errors = Partial<Record<'name' | 'trade' | 'rate' | 'mrp' | 'sizes' | 'images' | 'pack_of', string>>;
 
@@ -180,10 +180,10 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
         </Card>
       )}
 
-      <form onSubmit={submit} noValidate className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <form onSubmit={submit} noValidate className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card className="space-y-6 p-5 sm:p-6">
           <Field label="Product name" htmlFor="pname" error={errors.name}>
-            <Input id="pname" value={f.name} maxLength={120} invalid={!!errors.name} placeholder="e.g. Anarkali Kurti" onChange={(e) => set({ name: e.target.value }, 'name')} />
+            <Input id="pname" value={f.name} maxLength={120} invalid={!!errors.name} placeholder="e.g. Men’s Cotton Rib Vest" onChange={(e) => set({ name: e.target.value }, 'name')} />
           </Field>
 
           <Field label="Trade" htmlFor="ptrade" error={errors.trade} hint={`The section retailers find it under in ${companyName}.`}>
@@ -196,7 +196,7 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
               <AnimatePresence>
                 {f.tradeId === NEW_TRADE && (
                   <motion.div initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex-1">
-                    <Input autoFocus value={f.newTrade} maxLength={80} placeholder="e.g. Kurtis" invalid={!!errors.trade} onChange={(e) => set({ newTrade: e.target.value }, 'trade')} />
+                    <Input autoFocus value={f.newTrade} maxLength={80} placeholder="e.g. Vests" invalid={!!errors.trade} onChange={(e) => set({ newTrade: e.target.value }, 'trade')} />
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -215,13 +215,13 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
             </Field>
           </div>
 
-          <Field label="Sizes" htmlFor="psizes" error={errors.sizes} hint="Type any size and press Enter: S, 32, 3–4 Y, Free Size… Each size is ordered in its own pack.">
+          <Field label="Sizes" htmlFor="psizes" error={errors.sizes} hint="Type any size and press Enter: S, XL, 85, 90 cm, 32B, Free Size… Each size is ordered in its own pack.">
             <TagInput id="psizes" values={sizes} maxLength={20} invalid={!!errors.sizes} placeholder="Type a size and press Enter" suggestions={SIZE_HINTS}
               onChange={(v) => { setSizes(v); setErrors((e) => ({ ...e, sizes: undefined })); }} />
           </Field>
 
           <Field label="Colours" htmlFor="pcolours" hint="Optional. Type each colour and press Enter.">
-            <TagInput id="pcolours" values={colours} onChange={setColours} placeholder="e.g. Maroon, Navy, Bottle green" />
+            <TagInput id="pcolours" values={colours} onChange={setColours} placeholder="e.g. White, Black, Skin, Navy" />
           </Field>
 
           <div className="space-y-1.5">

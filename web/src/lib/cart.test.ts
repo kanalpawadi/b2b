@@ -4,9 +4,9 @@ import { cart, cartTotals } from './cart';
 const line = {
   packId: 'p1',
   productId: 'prod1',
-  productName: 'Cotton kurti',
+  productName: 'Cotton rib vest',
   companyName: 'Acme',
-  packLabel: 'Full set',
+  packLabel: 'Size 85',
   packSummary: 'S×1 · M×2',
   piecesPerPack: 3,
   pricePerPiece: 250,

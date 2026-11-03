@@ -12,6 +12,7 @@ import { Button, Card, Confirm, Empty, Field, Input, OrderPill, PageHeader, Segm
 import { listChild, listParent, Page } from '../../components/motion';
 import { ProductImage } from '../catalogue/Swatch';
 import { useMe } from '../auth/AuthProvider';
+import { InvoiceButton } from './InvoiceButton';
 
 type Filter = OrderStatus | 'all';
 
@@ -112,22 +113,27 @@ export function OrderDetail({ admin }: { admin?: boolean }) {
       </button>
       <PageHeader eyebrow={dateTime(o.created_at)} title={<>Order <span className="text-indigo">#{o.order_number}</span></>}>
         <OrderPill status={o.status} />
+        <InvoiceButton orderId={o.id} size="sm" />
       </PageHeader>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-3">
           {o.items.map((it, i) => (
             <motion.div key={it.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-              <Card className="flex gap-4 p-3 sm:p-4">
+              <Card className="flex gap-3 p-3 sm:gap-4 sm:p-4">
                 <ProductImage path={it.image_path} name={it.product_name} className="h-20 w-16 shrink-0" rounded="rounded-xl" />
-                <div className="min-w-0 flex-1">
-                  <p className="label-caps truncate">{it.company_name}</p>
-                  <p className="truncate font-display text-lg font-medium">{it.product_name}</p>
-                  <p className="text-sm text-ink-mute">{it.packs} × {it.pack_label} ({packSummary(it.composition)})</p>
-                </div>
-                <div className="text-right">
-                  <p className="tabular font-bold">{money(it.line_total)}</p>
-                  <p className="tabular text-xs text-ink-mute">{num(it.line_pieces)} pcs @ {money(it.price_per_piece)}</p>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-start sm:gap-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="label-caps truncate">{it.company_name}</p>
+                    <p className="line-clamp-2 font-display text-lg leading-snug font-medium break-words">{it.product_name}</p>
+                    <p className="text-sm text-ink-mute">
+                      {it.packs} × {it.composition.length === 1 ? `Size ${it.composition[0]!.size} · pack of ${it.pieces_per_pack}` : `${it.pack_label} (${packSummary(it.composition)})`}
+                    </p>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-2 sm:block sm:text-right">
+                    <p className="tabular font-bold">{money(it.line_total)}</p>
+                    <p className="tabular text-xs text-ink-mute">{num(it.line_pieces)} pcs @ {money(it.price_per_piece)}</p>
+                  </div>
                 </div>
               </Card>
             </motion.div>

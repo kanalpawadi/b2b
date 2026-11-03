@@ -11,6 +11,7 @@ import { Button, Card, Empty, PageHeader, Stepper, TextArea } from '../../compon
 import { ease, Page, Ticker } from '../../components/motion';
 import { ProductImage } from '../catalogue/Swatch';
 import type { Order } from '../../lib/types';
+import { InvoiceButton } from '../orders/InvoiceButton';
 
 export function Cart() {
   const { lines, note } = useCart();
@@ -46,7 +47,7 @@ export function Cart() {
   return (
     <Page>
       <PageHeader eyebrow="Cart" title={<>Review your <em className="text-indigo">order</em></>} />
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
         <ul className="space-y-3">
           <AnimatePresence initial={false}>
             {lines.map((l) => (
@@ -112,7 +113,9 @@ function Placed({ order, onView }: { order: Order; onView: () => void }) {
         <p className="label-caps">Order #{order.order_number}</p>
         <h1 className="mt-2 text-[40px] leading-tight font-medium">Order <em className="text-indigo">placed.</em></h1>
         <p className="mx-auto mt-3 max-w-sm text-ink-soft">{num(order.total_pieces)} pieces worth {money(order.total_amount)}. We’ll notify you as soon as it’s dispatched.</p>
-        <div className="mt-8 flex justify-center gap-2">
+        <p className="mx-auto mt-2 max-w-sm text-sm text-ink-mute">Your invoice is downloading as a PDF.</p>
+        <div className="mt-8 flex flex-wrap justify-center gap-2">
+          <InvoiceButton orderId={order.id} auto variant="accent" />
           <Button onClick={onView}>View order</Button>
           <Link to="/"><Button variant="outline">Keep shopping</Button></Link>
         </div>

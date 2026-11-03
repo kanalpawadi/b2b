@@ -309,6 +309,19 @@ export function useSetAccountStatus() {
   });
 }
 
+/** Permanently removes a paused account (admin_delete_account). Orders are kept. */
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => unwrap(supabase.rpc('admin_delete_account', { p_id: id })),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['directory'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+}
+
 // ---------- notifications ----------
 
 export function useNotifications(uid: string | undefined) {

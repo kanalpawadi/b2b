@@ -24,9 +24,9 @@ export function Breadcrumbs({ items, back }: { items: Crumb[]; back: string }) {
           <li key={i} className="flex items-center gap-1">
             {i > 0 && <ChevronRight className="size-3.5 shrink-0 text-ink-mute" />}
             {c.to ? (
-              <Link to={c.to} className="font-semibold text-ink-soft hover:text-indigo">{c.label}</Link>
+              <Link to={c.to} className="inline-block max-w-[42vw] truncate align-bottom font-semibold text-ink-soft hover:text-indigo sm:max-w-xs">{c.label}</Link>
             ) : (
-              <span aria-current="page" className="font-semibold text-ink">{c.label}</span>
+              <span aria-current="page" className="inline-block max-w-[50vw] truncate align-bottom font-semibold text-ink sm:max-w-sm">{c.label}</span>
             )}
           </li>
         ))}

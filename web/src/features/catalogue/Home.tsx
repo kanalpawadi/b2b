@@ -59,18 +59,19 @@ export function RetailerHome() {
 
   return (
     <Page>
-      <section className="weave grain relative mb-8 overflow-hidden rounded-[26px] p-6 text-paper sm:p-8">
-        <div className="relative flex flex-wrap items-center gap-6">
+      <section className="weave grain relative mb-8 overflow-hidden rounded-[26px] p-5 text-paper sm:p-8">
+        <div className="relative flex items-center gap-4 sm:gap-6">
           <motion.div initial={{ scale: 0.85, rotate: -8, opacity: 0 }} animate={{ scale: 1, rotate: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.1 }}
-            className="grid size-24 shrink-0 place-items-center rounded-[22px] bg-paper p-2.5 shadow-[var(--shadow-pop)] sm:size-28">
+            className="grid size-16 shrink-0 place-items-center rounded-2xl bg-paper p-1.5 shadow-[var(--shadow-pop)] sm:size-28 sm:rounded-[22px] sm:p-2.5">
             <img src={MSC_LOGO} alt={`${BRAND.name} logo`} className="h-full w-auto" />
           </motion.div>
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-semibold tracking-[0.16em] text-paper/60 uppercase">{greeting()}, {me.full_name.split(' ')[0]}</p>
-            <h1 className="mt-1.5 text-[30px] leading-[1.05] font-medium sm:text-[44px]">
+            <h1 className="mt-1.5 text-[26px] leading-[1.05] font-medium sm:text-[44px]">
               Pick a <em className="text-marigold">company</em> to start.
             </h1>
-            <p className="mt-2 max-w-lg text-sm text-paper/70">{BRAND.name} · wholesale garments since 2000.</p>
+            <p className="mt-1.5 text-[12.5px] text-paper/70 sm:hidden">Innerwear &amp; nightwear · wholesale</p>
+            <p className="mt-2 hidden max-w-lg text-sm text-paper/70 sm:block">{BRAND.name} · ladies’ &amp; gents’ innerwear and nightwear since 2000.</p>
           </div>
           <Link to="/about" className="hidden sm:block">
             <Button variant="accent" size="sm">About us <ArrowRight className="size-4" /></Button>
@@ -106,7 +107,7 @@ export function RetailerHome() {
                   <motion.div whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 400, damping: 26 }}>
                     <CompanyLogo path={c.logo_path} name={c.name} className="aspect-square w-full shadow-[var(--shadow-lift)] transition-shadow group-hover:shadow-[var(--shadow-pop)]" />
                   </motion.div>
-                  <p className="mt-3 truncate font-display text-[17px] font-medium group-hover:text-indigo">{c.name}</p>
+                  <p className="mt-3 line-clamp-2 font-display text-[17px] leading-snug font-medium break-words group-hover:text-indigo">{c.name}</p>
                   <p className="text-xs text-ink-mute">
                     {n ? `${n.trades} trade${n.trades === 1 ? '' : 's'} · ${n.products} design${n.products === 1 ? '' : 's'}` : 'Coming soon'}
                   </p>

@@ -1,6 +1,7 @@
 # Mukesh Sales Corporation — B2B Ordering (web)
 
-A wholesale ordering web app for retailers and the Mukesh Sales back office.
+A wholesale ordering web app for retailers and the Mukesh Sales back office,
+which distributes ladies’ and gents’ innerwear and nightwear.
 **React + Vite** in the browser, **Supabase** (Postgres, Auth, Storage, Realtime)
 as the whole backend. There is no separate server: every business rule lives in
 the database as Row Level Security policies and SQL functions.
@@ -22,7 +23,8 @@ web/
 shop details once (shop name, mobile, GSTIN, area, city and state), and ordering
 stays locked until they do. They browse the catalogue, add **packs** (for
 example 2 packs of size M, 6 pieces each) to a cart that is saved per user, and
-place orders. They can then
+place orders. Each order comes with a PDF invoice (downloaded automatically
+after placing it, and again any time from the order page). They can then
 track and cancel open orders, read alerts, edit their details and delete their
 account.
 
@@ -39,7 +41,7 @@ About Us page.
 - company management: add a company (name + logo upload), open it to see its products, add or edit
   products (name, trade, rate, MRP, colours, any sizes, image URLs or uploads, pack of), hide or show a company
 - alerts on the dashboard when companies or products are added, and a box to post updates to every retailer's home page
-- people management: retailer history, pausing and restoring accounts, approving admins
+- people management: retailer history, pausing and restoring accounts, deleting a paused account, approving admins
 - live alerts
 
 **Admin access** is hidden. On the sign-in screen, press and hold the logo (on
@@ -65,6 +67,8 @@ the owner's approval.
 | Updates | Adding a company or product posts one `announcements` row (and alerts admins) from a trigger, so a failed save never announces |
 | Photos & logos | Re-encoded to WebP in the browser (which strips EXIF/GPS); buckets `product-images` (5 MB) and `company-logos` (2 MB) accept only images, and only admins can write |
 | Stock | Not tracked. The app is a catalogue plus ordering |
+| Deleting accounts | `admin_delete_account()`: only a paused account, never the owner, admins only by the owner; orders are kept with their shop snapshot |
+| Invoices | Built in the browser from the order (HTML → PDF with jsPDF); nothing extra is stored |
 
 ## Setup
 
@@ -80,7 +84,7 @@ the owner's approval.
      ```
    - or paste each file in `supabase/migrations/` into **SQL Editor** and run them **in name order**:
      `20261102000000_init.sql`, then `20261103000000_google_sign_in.sql`, then
-     `20261104000000_company_navigation.sql`.
+     `20261104000000_company_navigation.sql`, then `20261105000000_admin_delete_account.sql`.
 
 ### 2. Email sign-in
 In **Authentication → Sign In / Providers → Email**, keep **Email** on.

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Ban, Check, ChevronRight, Phone, ShieldCheck, Users as UsersIcon } from 'lucide-react';
+import { ArrowLeft, Ban, Check, ChevronRight, Phone, ShieldCheck, Trash2, Users as UsersIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDirectory, useDirectoryEntry, useOrders, useSetAccountStatus } from '../../lib/queries';
+import { useDeleteAccount, useDirectory, useDirectoryEntry, useOrders, useSetAccountStatus } from '../../lib/queries';
 import { friendlyError } from '../../lib/supabase';
 import { dateOnly, displayPhone, money, moneyShort, num, relative } from '../../lib/format';
 import type { DirectoryEntry } from '../../lib/types';
-import { AccountPill, Avatar, Button, Card, Confirm, Empty, Input, OrderPill, PageHeader, Segmented, Skeleton } from '../../components/ui';
+import { AccountPill, Avatar, Button, Card, Confirm, Empty, Field, Input, OrderPill, PageHeader, Segmented, Skeleton } from '../../components/ui';
 import { listChild, listParent, Page } from '../../components/motion';
 import { useMe } from '../auth/AuthProvider';
 
@@ -84,7 +84,10 @@ export function UserDetail() {
   const user = useDirectoryEntry(id);
   const orders = useOrders({ retailerId: id, status: 'all' });
   const setStatus = useSetAccountStatus();
+  const del = useDeleteAccount();
   const [confirm, setConfirm] = useState<'block' | 'unblock' | 'approve' | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [typed, setTyped] = useState('');
 
   if (user.isPending) return <Skeleton className="h-64" />;
   if (!user.data) return <Empty icon={<UsersIcon className="size-7" />} title="Not found" body="This account may have been deleted." />;
@@ -103,10 +106,20 @@ export function UserDetail() {
     });
   };
 
+  const remove = () =>
+    del.mutate(u.id, {
+      onSuccess: () => {
+        toast.success(`${u.shop_name ?? u.full_name}’s account was deleted`, { description: u.role === 'retailer' ? 'Their past orders are kept.' : undefined });
+        setDeleting(false);
+        navigate(u.role === 'admin' ? '/admin/users?tab=admins' : '/admin/users', { replace: true });
+      },
+      onError: (e) => toast.error(friendlyError(e)),
+    });
+
   return (
     <Page>
       <button onClick={() => navigate(-1)} className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-ink-soft hover:text-ink"><ArrowLeft className="size-4" /> Back</button>
-      <div className="grid gap-6 lg:grid-cols-[340px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <Card className="h-fit p-6">
           <Avatar name={u.shop_name ?? u.full_name} className="size-16 text-xl" />
           <h1 className="mt-4 text-[28px] leading-tight font-medium">{u.shop_name ?? u.full_name}</h1>
@@ -127,6 +140,13 @@ export function UserDetail() {
               {u.status === 'active' && <Button variant="outline" className="flex-1 hover:!border-madder hover:!text-madder" icon={<Ban className="size-4" />} onClick={() => setConfirm('block')}>Pause account</Button>}
               {u.status === 'blocked' && <Button className="flex-1" icon={<Check className="size-4" />} onClick={() => setConfirm('unblock')}>Restore account</Button>}
               {u.status === 'pending' && <Button variant="ghost" onClick={() => setConfirm('block')}>Decline</Button>}
+            </div>
+          )}
+          {canManage && u.status === 'blocked' && (
+            <div className="mt-4 rounded-2xl border border-madder/30 bg-madder-100/50 p-4">
+              <p className="text-sm font-semibold text-madder">Remove for good</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-soft">Deletes this paused account and its sign-in. {u.role === 'retailer' ? 'Past orders stay on the order board.' : ''}</p>
+              <Button variant="danger" size="sm" className="mt-3 w-full" icon={<Trash2 className="size-4" />} onClick={() => { setTyped(''); setDeleting(true); }}>Delete account</Button>
             </div>
           )}
         </Card>
@@ -158,11 +178,19 @@ export function UserDetail() {
         tone={confirm === 'block' ? 'danger' : 'primary'}
         title={confirm === 'approve' ? 'Give admin access?' : confirm === 'block' ? (u.status === 'pending' ? 'Decline this request?' : 'Pause this account?') : 'Restore this account?'}
         confirmLabel={confirm === 'approve' ? 'Approve' : confirm === 'block' ? (u.status === 'pending' ? 'Decline' : 'Pause') : 'Restore'}
-        body={confirm === 'approve' ? `${u.full_name} will be able to manage orders, the catalogue and retailers.` : confirm === 'block' ? 'They will be signed out of everything and can’t place orders until you restore them.' : 'They will be able to sign in and order again.'} />
+        body={confirm === 'approve' ? `${u.full_name} will be able to manage orders, the catalogue and retailers.` : confirm === 'block' ? 'They will be signed out of everything and can’t place orders until you restore them. You can delete the account after pausing it.' : 'They will be able to sign in and order again.'} />
+
+      <Confirm open={deleting} onClose={() => setDeleting(false)} onConfirm={() => typed.trim().toUpperCase() === 'DELETE' ? remove() : toast.error('Type DELETE to confirm')}
+        loading={del.isPending} title="Delete this account?" confirmLabel="Delete forever"
+        body={<>This permanently removes <b>{u.shop_name ?? u.full_name}</b> and their sign-in. It can’t be undone. {u.role === 'retailer' && 'Their orders stay on the order board with the shop details recorded at the time.'}</>}>
+        <Field label="Type DELETE to confirm" htmlFor="del-confirm">
+          <Input id="del-confirm" value={typed} autoComplete="off" onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" />
+        </Field>
+      </Confirm>
     </Page>
   );
 }
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
-  return <div className="flex justify-between gap-4"><dt className="text-ink-mute">{k}</dt><dd className="text-right font-semibold">{v}</dd></div>;
+  return <div className="flex justify-between gap-4"><dt className="shrink-0 text-ink-mute">{k}</dt><dd className="min-w-0 text-right font-semibold [overflow-wrap:anywhere]">{v}</dd></div>;
 }

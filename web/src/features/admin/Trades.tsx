@@ -84,7 +84,7 @@ export function Trades() {
       <Breadcrumbs back="/admin/companies" items={[{ label: 'Companies', to: '/admin/companies' }, { label: 'Trades' }]} />
       <PageHeader eyebrow="Set-up" title={<>Trades</>} />
       <div className="max-w-xl">
-        <MasterList title="Trades" hint="Sections like Kurtis or Shirts. A trade that products still use can’t be deleted." rows={trades.data} loading={trades.isPending}
+        <MasterList title="Trades" hint="Sections like Vests, Briefs or Night suits. A trade that products still use can’t be deleted." rows={trades.data} loading={trades.isPending}
           onAdd={(v) => tr.create.mutateAsync(v)} onRename={(id, name) => tr.rename.mutateAsync({ id, name })} onRemove={(id) => tr.remove.mutateAsync(id)} />
       </div>
     </Page>

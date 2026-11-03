@@ -3,7 +3,7 @@ import clsx from 'clsx';
 export const BRAND = {
   name: 'Mukesh Sales Corporation',
   short: 'Mukesh Sales',
-  tagline: 'Wholesale clothing, ordered by the pack.',
+  tagline: 'Ladies’ & gents’ innerwear and nightwear, wholesale.',
 };
 
 /** The MSC logo as supplied (cropped, background made transparent). */

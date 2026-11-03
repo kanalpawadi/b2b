@@ -56,13 +56,13 @@ export function TradePage() {
   return (
     <Page>
       <Breadcrumbs back={back} items={crumbs} />
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="label-caps">{c.name}</p>
-          <h1 className="mt-1 text-[32px] leading-tight font-medium sm:text-[44px]">{tradeName}</h1>
+      <header className="mb-6 flex items-start justify-between gap-3 sm:mb-8 sm:items-end">
+        <div className="min-w-0">
+          <p className="label-caps truncate">{c.name}</p>
+          <h1 className="mt-1 text-[28px] leading-tight font-medium break-words sm:text-[44px]">{tradeName}</h1>
           <p className="text-sm text-ink-mute">{list.length} design{list.length === 1 ? '' : 's'}</p>
         </div>
-        <CompanyLogo path={c.logo_path} name={c.name} className="size-14 shrink-0" />
+        <CompanyLogo path={c.logo_path} name={c.name} className="size-11 shrink-0 rounded-xl sm:size-14 sm:rounded-2xl" />
       </header>
 
       <motion.ul variants={listParent} initial="hidden" animate="show" className="space-y-6">
@@ -104,7 +104,7 @@ function ProductPanel({ product: p, highlight }: { product: ProductWithRefs; hig
       <div className="p-3 sm:p-4">
         <AnimatePresence mode="wait">
           <motion.div key={imgIdx} initial={{ opacity: 0, scale: 1.02 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <ProductImage path={p.image_paths[imgIdx]} name={p.name} className="aspect-[4/5] w-full" />
+            <ProductImage path={p.image_paths[imgIdx]} name={p.name} className="aspect-[4/3] w-full md:aspect-[4/5]" />
           </motion.div>
         </AnimatePresence>
         {p.image_paths.length > 1 && (
@@ -118,9 +118,9 @@ function ProductPanel({ product: p, highlight }: { product: ProductWithRefs; hig
         )}
       </div>
 
-      <div className="flex flex-col p-5 sm:p-6 md:pl-2">
+      <div className="flex min-w-0 flex-col p-4 pt-1 sm:p-6 md:pl-2">
         <p className="label-caps">{p.trade?.name}{p.sku ? ` · Design #${p.sku}` : ''}</p>
-        <h2 className="mt-1 text-[26px] leading-tight font-medium">{p.name}</h2>
+        <h2 className="mt-1 text-[22px] leading-tight font-medium break-words sm:text-[26px]">{p.name}</h2>
 
         <dl className="mt-4 grid grid-cols-3 gap-2">
           <Fact label="Rate" value={<>{money(p.price_per_piece)}<span className="text-xs font-semibold text-ink-mute"> /pc</span></>} strong />
@@ -169,7 +169,7 @@ function ProductPanel({ product: p, highlight }: { product: ProductWithRefs; hig
             <p className="text-sm text-ink-mute">
               {packs ? <><b className="tabular text-ink">{num(packs)}</b> pack{packs === 1 ? '' : 's'} · <span className="tabular">{num(pieces)}</span> pcs · <b className="tabular text-ink">{money(pieces * p.price_per_piece)}</b></> : 'Set a quantity to add to your cart.'}
             </p>
-            <Button ref={addRef} onClick={add} disabled={!packs} icon={<ShoppingBag className="size-4" />}>Add to cart</Button>
+            <Button ref={addRef} onClick={add} disabled={!packs} className="w-full sm:w-auto" icon={<ShoppingBag className="size-4" />}>Add to cart</Button>
           </div>
         </div>
       </div>

@@ -98,12 +98,12 @@ export function Dashboard() {
         </motion.div>
       )}
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RecentAlerts />
         <RetailerUpdates />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {s ? <DailyChart daily={s.daily} /> : <Skeleton className="h-72" />}
 
         <Card className="p-5 sm:p-6">

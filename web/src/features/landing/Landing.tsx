@@ -2,11 +2,11 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion, useScroll, useSpring, useTransform } from 'motion/react';
 import clsx from 'clsx';
-import { ArrowRight, BellRing, Check, Lock, Minus, PackageCheck, Plus, ShoppingBag, Smartphone, Sparkles } from 'lucide-react';
+import { ArrowRight, BellRing, Check, Lock, Minus, PackageCheck, Plus, ShoppingBag, Smartphone } from 'lucide-react';
 import { BRAND, Wordmark } from '../../components/Brand';
 import { ease } from '../../components/motion';
 
-const TRADES = ['Kurtis', 'Denim', 'Shirting', 'Sarees', 'Kidswear', 'Leggings', 'Nightwear', 'Ethnic sets', 'Winterwear', 'T-shirts', 'Lowers', 'Innerwear'];
+const TRADES = ['Vests', 'Briefs', 'Trunks', 'Boxers', 'Bras', 'Panties', 'Camisoles', 'Slips', 'Nighties', 'Night suits', 'Pyjamas', 'Lounge shorts', 'Thermals'];
 
 const DYES = [
   { base: '#1e2a4a', thread: '#2f4275' },
@@ -127,12 +127,12 @@ function HeroArt() {
         <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           className="rounded-2xl border border-line bg-card p-4 shadow-[var(--shadow-pop)]">
           <div className="flex items-center justify-between">
-            <span className="label-caps">Sample pack</span>
-            <span className="rounded-full bg-leaf-100 px-2 py-0.5 text-[10px] font-bold text-leaf">Pack of 6</span>
+            <span className="label-caps">Sample order</span>
+            <span className="rounded-full bg-leaf-100 px-2 py-0.5 text-[10px] font-bold text-leaf">Pack of 5</span>
           </div>
-          <p className="mt-2 font-display text-lg leading-tight font-medium">Full set</p>
+          <p className="mt-2 font-display text-lg leading-tight font-medium">Cotton rib vest</p>
           <div className="mt-3 grid grid-cols-4 gap-1.5">
-            {[['S', 1], ['M', 2], ['L', 2], ['XL', 1]].map(([s, q], i) => (
+            {[['80', 2], ['85', 3], ['90', 2], ['95', 1]].map(([s, q], i) => (
               <motion.div key={s as string} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.3 + i * 0.08 }}
                 className="rounded-lg bg-paper-2 py-1.5 text-center">
                 <p className="text-[10px] font-bold text-ink-mute">{s}</p>
@@ -142,8 +142,8 @@ function HeroArt() {
           </div>
           <div className="stitch my-3" />
           <div className="flex items-center justify-between text-sm">
-            <span className="text-ink-mute">6 pieces</span>
-            <span className="inline-flex items-center gap-1 font-semibold text-indigo"><Plus className="size-3.5" />Add pack</span>
+            <span className="text-ink-mute">8 packs · 40 pcs</span>
+            <span className="inline-flex items-center gap-1 font-semibold text-indigo"><Plus className="size-3.5" />Add to cart</span>
           </div>
         </motion.div>
       </motion.div>
@@ -169,17 +169,17 @@ function HeroArt() {
 }
 
 function Hero() {
-  const words = ['Wholesale', 'clothing,'];
+  const words = ['Innerwear', '&', 'nightwear,'];
   return (
     <section className="relative overflow-hidden">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 md:pt-20 lg:grid-cols-[1.1fr_1fr] lg:gap-6 lg:pb-28">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 md:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-6 lg:pb-28">
         <div>
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }}
             className="mb-6 inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-[12.5px] font-semibold text-ink-soft">
             <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-leaf opacity-60" /><span className="relative inline-flex size-2 rounded-full bg-leaf" /></span>
             Now taking orders online
           </motion.p>
-          <h1 className="text-[46px] leading-[0.98] font-medium sm:text-[64px] lg:text-[66px] xl:text-[72px]">
+          <h1 className="text-[clamp(2.4rem,11vw,2.9rem)] leading-[0.98] font-medium sm:text-[64px] lg:text-[66px] xl:text-[72px]">
             {words.map((w, i) => (
               <motion.span key={w} className="mr-[0.22em] inline-block" initial={{ opacity: 0, y: 40, rotate: 3 }} animate={{ opacity: 1, y: 0, rotate: 0 }} transition={{ duration: 0.8, delay: 0.1 + i * 0.1, ease }}>
                 {w}
@@ -192,8 +192,8 @@ function Hero() {
           </h1>
           <motion.p initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.5, ease }}
             className="mt-7 max-w-lg text-[17px] leading-relaxed text-ink-soft">
-            {BRAND.name} brings its full wholesale range to your phone. See the latest designs the day they land,
-            order ready-made size packs, and follow every order until it reaches your counter.
+            {BRAND.name} brings its ladies’ and gents’ innerwear and nightwear range to your phone. See new
+            lots the day they land, order by the pack in every size, and follow each order until it reaches your counter.
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.62, ease }}
             className="mt-9 flex flex-wrap items-center gap-3">
@@ -238,7 +238,7 @@ function TradeRibbon() {
 
 const STEPS = [
   { title: 'Register your shop', body: 'Create an account with your email, add your shop name, GSTIN and city once, and you are in.', icon: <Smartphone className="size-5" /> },
-  { title: 'Pick designs by the pack', body: 'Filter by trade, company or size. Every design comes in ready size packs, so there are no odd pieces to count.', icon: <ShoppingBag className="size-5" /> },
+  { title: 'Order by the pack', body: 'Open a brand, pick a section like vests, briefs or night suits, and choose how many packs of each size you need.', icon: <ShoppingBag className="size-5" /> },
   { title: 'Track it to your counter', body: 'The office confirms prices, packs your order and you get an alert the moment it is dispatched.', icon: <BellRing className="size-5" /> },
 ];
 
@@ -278,23 +278,23 @@ function HowItWorks() {
 
 // ---------------------------------------------------------------------
 
-const PACK_SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+const PACK_SIZES = ['80', '85', '90', '95', '100'];
+const PACK_OF = 5;
 
 function PackBuilder() {
-  const [qty, setQty] = useState<Record<string, number>>({ S: 1, M: 2, L: 2, XL: 1, XXL: 0 });
-  const [packs, setPacks] = useState(3);
-  const perPack = Object.values(qty).reduce((a, b) => a + b, 0);
-  const bump = (s: string, d: number) => setQty((q) => ({ ...q, [s]: Math.max(0, Math.min(9, (q[s] ?? 0) + d)) }));
+  const [packs, setPacks] = useState<Record<string, number>>({ '80': 1, '85': 3, '90': 3, '95': 2, '100': 0 });
+  const total = Object.values(packs).reduce((a, b) => a + b, 0);
+  const bump = (s: string, d: number) => setPacks((q) => ({ ...q, [s]: Math.max(0, Math.min(8, (q[s] ?? 0) + d)) }));
 
   return (
     <section id="packs" className="scroll-mt-20 bg-paper-2/60">
       <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 py-24 sm:px-6 lg:grid-cols-2 lg:py-32">
         <motion.div {...rise}>
           <p className="label-caps mb-3">The pack system</p>
-          <h2 className="text-[38px] leading-[1.04] font-medium sm:text-[52px]">One tap orders a <em className="text-indigo">whole size run.</em></h2>
+          <h2 className="text-[34px] leading-[1.04] font-medium sm:text-[52px]">Every size, <em className="text-indigo">one order.</em></h2>
           <p className="mt-6 max-w-md text-[16.5px] leading-relaxed text-ink-soft">
-            Every design is sold in packs that match how you sell, for example one Small, two Medium, two Large and one XL.
-            Choose how many packs you want and we handle the rest. Try it here.
+            Innerwear and nightwear come in sealed packs, for example a box of {PACK_OF} vests in one size.
+            Set how many packs of each size you want and add them all at once. Try it here.
           </p>
           <div className="mt-8 flex flex-wrap gap-6 text-sm">
             <div><p className="font-display text-3xl font-medium">Fewer</p><p className="text-ink-mute">mistakes on size counts</p></div>
@@ -303,20 +303,20 @@ function PackBuilder() {
           </div>
         </motion.div>
 
-        <motion.div {...rise} transition={{ ...rise.transition, delay: 0.1 }} className="rounded-[28px] border border-line bg-card p-5 shadow-[var(--shadow-pop)] sm:p-7">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="label-caps">Build a pack</p>
-              <p className="mt-1 font-display text-2xl font-medium">Printed cotton kurti</p>
+        <motion.div {...rise} transition={{ ...rise.transition, delay: 0.1 }} className="rounded-[28px] border border-line bg-card p-4 shadow-[var(--shadow-pop)] sm:p-7">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="label-caps">Men’s innerwear</p>
+              <p className="mt-1 font-display text-2xl font-medium">Cotton rib vest</p>
             </div>
-            <Sparkles className="size-5 text-marigold" />
+            <span className="shrink-0 rounded-full bg-leaf-100 px-2.5 py-1 text-[11px] font-bold text-leaf">Pack of {PACK_OF}</span>
           </div>
 
-          <div className="mt-6 grid grid-cols-5 gap-2">
+          <div className="mt-6 grid grid-cols-5 gap-1.5 sm:gap-2">
             {PACK_SIZES.map((s, i) => {
-              const n = qty[s] ?? 0;
+              const n = packs[s] ?? 0;
               return (
-                <div key={s} className="flex flex-col items-center gap-2">
+                <div key={s} className="flex min-w-0 flex-col items-center gap-2">
                   <span className="text-xs font-bold text-ink-mute">{s}</span>
                   <div className="relative flex h-28 w-full flex-col-reverse items-center gap-1 overflow-hidden rounded-xl bg-paper-2 p-1.5">
                     <AnimatePresence initial={false}>
@@ -327,10 +327,10 @@ function PackBuilder() {
                       ))}
                     </AnimatePresence>
                   </div>
-                  <div className="flex items-center gap-0.5">
-                    <button aria-label={`Fewer ${s}`} onClick={() => bump(s, -1)} className="grid size-7 place-items-center rounded-full text-ink-mute hover:bg-paper-2 hover:text-ink"><Minus className="size-3.5" /></button>
+                  <div className="flex items-center">
+                    <button aria-label={`Fewer packs of ${s}`} onClick={() => bump(s, -1)} className="grid size-6 place-items-center rounded-full text-ink-mute hover:bg-paper-2 hover:text-ink sm:size-7"><Minus className="size-3.5" /></button>
                     <span className="tabular w-4 text-center text-sm font-bold">{n}</span>
-                    <button aria-label={`More ${s}`} onClick={() => bump(s, 1)} className="grid size-7 place-items-center rounded-full text-ink-mute hover:bg-paper-2 hover:text-ink"><Plus className="size-3.5" /></button>
+                    <button aria-label={`More packs of ${s}`} onClick={() => bump(s, 1)} className="grid size-6 place-items-center rounded-full text-ink-mute hover:bg-paper-2 hover:text-ink sm:size-7"><Plus className="size-3.5" /></button>
                   </div>
                 </div>
               );
@@ -339,26 +339,16 @@ function PackBuilder() {
 
           <div className="stitch my-6" />
 
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold text-ink-soft">Packs</span>
-              <div className="inline-flex h-10 items-center rounded-full border border-line">
-                <button aria-label="Fewer packs" onClick={() => setPacks((p) => Math.max(1, p - 1))} className="grid size-10 place-items-center text-ink-soft"><Minus className="size-4" /></button>
-                <span className="tabular w-6 text-center font-bold">{packs}</span>
-                <button aria-label="More packs" onClick={() => setPacks((p) => Math.min(99, p + 1))} className="grid size-10 place-items-center text-ink-soft"><Plus className="size-4" /></button>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs font-semibold text-ink-mute">{perPack} pcs per pack</p>
-              <p className="font-display text-3xl font-medium">
-                <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.span key={perPack * packs} className="tabular inline-block" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }}>
-                    {perPack * packs}
-                  </motion.span>
-                </AnimatePresence>{' '}
-                <span className="text-lg text-ink-mute">pieces</span>
-              </p>
-            </div>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <p className="text-sm font-semibold text-ink-soft"><span className="tabular">{total}</span> packs <span className="text-ink-mute">× {PACK_OF} pcs</span></p>
+            <p className="font-display text-3xl font-medium">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span key={total} className="tabular inline-block" initial={{ y: 16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }}>
+                  {total * PACK_OF}
+                </motion.span>
+              </AnimatePresence>{' '}
+              <span className="text-lg text-ink-mute">pieces</span>
+            </p>
           </div>
         </motion.div>
       </div>

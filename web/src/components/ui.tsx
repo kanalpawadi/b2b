@@ -207,7 +207,7 @@ export function OrderPill({ status }: { status: OrderStatus }) {
 
 export function AccountPill({ status }: { status: AccountStatus }) {
   const tone = status === 'active' ? 'bg-leaf-100 text-leaf' : status === 'blocked' ? 'bg-madder-100 text-madder' : 'bg-marigold-100 text-[#8a5a10]';
-  return <span className={clsx('rounded-full px-2.5 py-1 text-xs font-bold capitalize', tone)}>{status === 'pending' ? 'Awaiting approval' : status}</span>;
+  return <span className={clsx('rounded-full px-2.5 py-1 text-xs font-bold capitalize', tone)}>{status === 'pending' ? 'Awaiting approval' : status === 'blocked' ? 'Paused' : status}</span>;
 }
 
 export function Chip({ active, onClick, children }: { active?: boolean; onClick?: () => void; children: ReactNode }) {

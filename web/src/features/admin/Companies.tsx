@@ -84,7 +84,7 @@ function CompanyGrid({ companies, counts, muted }: { companies: Company[]; count
               <motion.div whileHover={{ y: -4 }} transition={{ type: 'spring', stiffness: 400, damping: 28 }}>
                 <CompanyLogo path={c.logo_path} name={c.name} className={clsx('aspect-square w-full shadow-[var(--shadow-lift)] transition-shadow group-hover:shadow-[var(--shadow-pop)]', muted && 'opacity-60 grayscale')} />
               </motion.div>
-              <p className="mt-3 truncate font-display text-lg font-medium">{c.name}</p>
+              <p className="mt-3 line-clamp-2 font-display text-lg leading-snug font-medium break-words">{c.name}</p>
               <p className="text-xs text-ink-mute">{muted ? 'Hidden from retailers' : `${n} live product${n === 1 ? '' : 's'}`}{!c.logo_path && ' · logo missing'}</p>
             </Link>
           </motion.li>
@@ -204,10 +204,10 @@ export function AddCompany() {
     <Page>
       <Breadcrumbs back="/admin/companies" items={[{ label: 'Companies', to: '/admin/companies' }, { label: 'Add company' }]} />
       <PageHeader eyebrow="New" title={<>Add a <em className="text-indigo">company</em></>} />
-      <form onSubmit={submit} className="grid gap-8 lg:grid-cols-[1fr_300px]">
+      <form onSubmit={submit} className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <Card className="space-y-6 p-5 sm:p-6">
           <Field label="Company name" htmlFor="cname" error={errors.name}>
-            <Input id="cname" value={name} autoFocus maxLength={80} invalid={!!errors.name} placeholder="e.g. Sonam Fashions"
+            <Input id="cname" value={name} autoFocus maxLength={80} invalid={!!errors.name} placeholder="e.g. Comfort Knit"
               onChange={(e) => { setName(e.target.value); setErrors((v) => ({ ...v, name: undefined })); }} />
           </Field>
           <div className="space-y-1.5">

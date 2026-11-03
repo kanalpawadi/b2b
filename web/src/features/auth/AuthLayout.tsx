@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { BRAND, Mark, Wordmark } from '../../components/Brand';
 import { ease } from '../../components/motion';
 
-const THREADS = ['Kurtis', 'Denim', 'Shirting', 'Sarees', 'Kidswear', 'Leggings', 'Nightwear', 'Ethnic sets', 'Winterwear', 'Innerwear'];
+const THREADS = ['Vests', 'Briefs', 'Trunks', 'Bras', 'Panties', 'Camisoles', 'Nighties', 'Night suits', 'Pyjamas', 'Thermals'];
 
 /** Fabric-swatch panel: slow drifting rows of trade names, like a mill's ledger. */
 function StoryPanel() {
@@ -39,7 +39,7 @@ function StoryPanel() {
           Your counter, <em className="text-marigold">always</em> stocked.
         </p>
         <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-paper/70">
-          Browse the latest lots, order in packs, and track every order with {BRAND.short} — straight from your shop.
+          Ladies’ and gents’ innerwear and nightwear. Browse the latest lots, order by the pack, and track every order with {BRAND.short}, straight from your shop.
         </p>
         <div className="mt-8 flex items-center gap-3 text-[12px] font-semibold tracking-[0.16em] text-paper/50 uppercase">
           <span className="h-px w-10 bg-paper/30" />
@@ -61,7 +61,7 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: React
   const holdEnd = () => window.clearTimeout(timer.current);
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[1.05fr_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
       <StoryPanel />
       <div className="relative flex min-h-dvh flex-col px-5 py-8 sm:px-10">
         <div className="flex items-center justify-between">

@@ -54,14 +54,14 @@ export function Account() {
   return (
     <Page>
       <PageHeader eyebrow="Account" title={<>Your <em className="text-indigo">shop</em></>} />
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <Card className="h-fit p-6">
           <Avatar name={me.full_name} className="size-16 text-xl" />
           <p className="mt-4 font-display text-2xl font-medium">{me.shop_name ?? me.full_name}</p>
           <p className="text-sm text-ink-soft">{me.full_name}</p>
           <div className="stitch my-5" />
           <dl className="space-y-2.5 text-sm">
-            <div className="flex justify-between gap-2"><dt className="text-ink-mute">Email</dt><dd className="truncate font-semibold">{me.email ?? '—'}</dd></div>
+            <div className="flex justify-between gap-2"><dt className="text-ink-mute">Email</dt><dd className="min-w-0 truncate font-semibold">{me.email ?? '—'}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-ink-mute">Mobile</dt><dd className="font-semibold">{displayPhone(me.phone)}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-ink-mute">Member since</dt><dd className="font-semibold">{dateOnly(me.created_at)}</dd></div>
           </dl>

@@ -171,7 +171,7 @@ export function AdminShell({ items }: { items: NavItem[] }) {
   const withBadges = items.map((it) => (it.to === '/admin/alerts' ? { ...it, badge: unread } : it));
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_minmax(0,1fr)]">
       <aside className="weave grain relative hidden flex-col overflow-hidden text-paper lg:sticky lg:top-0 lg:flex lg:h-dvh">
         <div className="relative px-6 pt-7 pb-8">
           <Wordmark light />
