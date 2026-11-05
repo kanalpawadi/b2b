@@ -77,6 +77,7 @@ export function friendlyError(error: unknown): string {
   if (/access_denied|cancel/i.test(message)) return 'Google sign-in was cancelled.';
   if (/token has expired|otp.*(expired|invalid)|invalid.*(otp|token)|email link is invalid/i.test(message)) return 'That link has expired or was already used. Ask for a new one.';
   if (/code verifier|auth code and code verifier/i.test(message)) return 'Open the link in the same browser you used to sign up, or ask for a new link.';
+  if (/dynamically imported module|importing a module script failed/i.test(message)) return 'The app was updated. Refresh the page and try again.';
   if (/failed to fetch|network/i.test(message)) return 'Can’t reach the server. Check your internet connection.';
   if (/rate limit|too many/i.test(message)) return 'Too many attempts. Please wait a minute and try again.';
   if (/companies_name_ci|companies_name_key/i.test(message)) return 'A company with this name already exists.';

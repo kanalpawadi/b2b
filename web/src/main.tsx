@@ -6,7 +6,13 @@ import { MotionConfig } from 'motion/react';
 import { Toaster } from 'sonner';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { App } from './App';
+import { reloadForNewVersion } from './lib/staleBuild';
 import './index.css';
+
+// A tab left open across a deploy asks for files that no longer exist; load the new build instead.
+window.addEventListener('vite:preloadError', () => {
+  reloadForNewVersion();
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {
