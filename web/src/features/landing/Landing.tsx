@@ -461,6 +461,8 @@ function Footer() {
           <a href="#packs" className="hover:text-ink">Packs</a>
           <Link to="/register" className="hover:text-ink">Register</Link>
           <Link to="/sign-in" className="hover:text-ink">Sign in</Link>
+          <Link to="/privacy" className="hover:text-ink">Privacy</Link>
+          <Link to="/terms" className="hover:text-ink">Terms</Link>
         </div>
         <p className="text-xs text-ink-mute">© {new Date().getFullYear()} {BRAND.name}</p>
       </div>

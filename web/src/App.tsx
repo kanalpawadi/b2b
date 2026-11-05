@@ -11,6 +11,7 @@ import { RetailerHome } from './features/catalogue/Home';
 import { CompanyPage } from './features/catalogue/CompanyPage';
 import { TradePage } from './features/catalogue/TradePage';
 import { About } from './features/about/About';
+import { Privacy, Terms } from './features/legal/Legal';
 import { Cart } from './features/cart/Cart';
 import { OrderDetail, OrderList } from './features/orders/Orders';
 import { Alerts } from './features/notifications/Alerts';
@@ -36,6 +37,8 @@ export function App() {
     return (
       <Routes>
         <Route index element={<Landing />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
         <Route path="*" element={<SetupNeeded />} />
       </Routes>
     );
@@ -47,6 +50,9 @@ export function App() {
       {/* The reset email signs the user in, so this works in both states. */}
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/auth/confirm" element={<AuthConfirm />} />
+      {/* Public for everyone: Google's sign-in screen links here. */}
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
       {!session ? (
         <>
           <Route index element={<Landing />} />

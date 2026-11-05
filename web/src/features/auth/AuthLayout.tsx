@@ -94,6 +94,9 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: React
           </motion.div>
           <div className="mt-8">{children}</div>
           {footer && <div className="mt-8 text-[14.5px] text-ink-soft">{footer}</div>}
+          <p className="mt-6 text-xs text-ink-mute">
+            By continuing you agree to our <Link to="/terms" className="underline hover:text-ink">Terms</Link> and <Link to="/privacy" className="underline hover:text-ink">Privacy Policy</Link>.
+          </p>
         </div>
 
         <AnimatePresence>
