@@ -10,9 +10,13 @@ export const isConfigured = Boolean(url && key && !url.includes('your-project-re
 export const supabase = createClient(
   isConfigured ? url! : 'http://localhost:54321',
   isConfigured ? key! : 'not-configured',
-  // PKCE + detectSessionInUrl: Google redirects back with ?code=…, which the
-  // client exchanges for a session on load.
-  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' } },
+  // Implicit flow: Supabase's default confirmation and reset emails come back
+  // with the session in the #fragment, which works whatever browser or mail
+  // app opens the link. (PKCE links only finish in the browser that asked,
+  // which fails when a phone opens them inside Gmail's own browser.) The
+  // token_hash links in /auth/confirm also work once custom email templates
+  // are set up.
+  { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } },
 );
 
 /** Google sign-in is built but switched off until the OAuth client is set up. */
