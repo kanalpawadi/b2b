@@ -79,6 +79,13 @@ export function friendlyError(error: unknown): string {
   if (/code verifier|auth code and code verifier/i.test(message)) return 'Open the link in the same browser you used to sign up, or ask for a new link.';
   if (/dynamically imported module|importing a module script failed/i.test(message)) return 'The app was updated. Refresh the page and try again.';
   if (/failed to fetch|network/i.test(message)) return 'Can’t reach the server. Check your internet connection.';
+  // Supabase caps emails per hour for the whole project (very low on its built-in mailer).
+  const code = typeof error === 'object' && error && 'code' in error ? String((error as { code: unknown }).code) : '';
+  if (code === 'over_email_send_rate_limit' || /email rate limit/i.test(message)) {
+    return 'We can’t send more emails right now: the hourly email limit has been reached. Please try again in an hour.';
+  }
+  const wait = message.match(/after (\d+) seconds?/i);
+  if (wait) return `For security, please wait ${wait[1]} seconds before asking again.`;
   if (/rate limit|too many/i.test(message)) return 'Too many attempts. Please wait a minute and try again.';
   if (/companies_name_ci|companies_name_key/i.test(message)) return 'A company with this name already exists.';
   if (/duplicate key/i.test(message)) return 'That name is already in use.';
