@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import clsx from 'clsx';
 import { useOrder, useOrders, useSetOrderStatus } from '../../lib/queries';
 import { friendlyError } from '../../lib/supabase';
-import { dateTime, displayPhone, money, num, packSummary, relative } from '../../lib/format';
+import { dateTime, displayPhone, num, packSummary, relative } from '../../lib/format';
 import type { Order, OrderStatus } from '../../lib/types';
 import { Button, Card, Confirm, Empty, Field, Input, OrderPill, PageHeader, Segmented, Skeleton } from '../../components/ui';
 import { listChild, listParent, Page } from '../../components/motion';
@@ -66,10 +66,10 @@ function OrderRow({ order: o, to, admin }: { order: Order; to: string; admin?: b
           <OrderPill status={o.status} />
         </div>
         <p className="mt-0.5 truncate text-sm text-ink-mute">
-          {admin && o.city ? `${o.city} · ` : ''}{num(o.total_pieces)} pcs · {relative(o.created_at)}
+          {admin && o.city ? `${o.city} · ` : ''}<span className="sm:hidden">{num(o.total_pieces)} pcs · </span>{relative(o.created_at)}
         </p>
       </div>
-      <p className="tabular hidden font-bold sm:block">{money(o.total_amount)}</p>
+      <p className="tabular hidden font-bold sm:block">{num(o.total_pieces)} pcs</p>
       <ChevronRight className="size-5 text-ink-mute transition group-hover:translate-x-0.5" />
     </Link>
   );
@@ -131,8 +131,8 @@ export function OrderDetail({ admin }: { admin?: boolean }) {
                     </p>
                   </div>
                   <div className="flex items-baseline justify-between gap-2 sm:block sm:text-right">
-                    <p className="tabular font-bold">{money(it.line_total)}</p>
-                    <p className="tabular text-xs text-ink-mute">{num(it.line_pieces)} pcs @ {money(it.price_per_piece)}</p>
+                    <p className="tabular font-bold">{num(it.packs)} pack{it.packs === 1 ? '' : 's'}</p>
+                    <p className="tabular text-xs text-ink-mute">{num(it.line_pieces)} pcs</p>
                   </div>
                 </div>
               </Card>
@@ -142,9 +142,9 @@ export function OrderDetail({ admin }: { admin?: boolean }) {
 
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <Card className="p-5">
-            <p className="label-caps">Total</p>
-            <p className="tabular mt-1 font-display text-[34px] leading-none font-medium">{money(o.total_amount)}</p>
-            <p className="mt-1.5 text-sm text-ink-mute">{num(o.total_pieces)} pieces</p>
+            <p className="label-caps">Total packs</p>
+            <p className="tabular mt-1 font-display text-[34px] leading-none font-medium">{num(o.items.reduce((s, it) => s + it.packs, 0))}</p>
+            <p className="mt-1.5 text-sm text-ink-mute">{num(o.total_pieces)} pieces · {num(o.items.length)} line{o.items.length === 1 ? '' : 's'}</p>
             <div className="stitch my-5" />
             <ol className="space-y-4">
               {steps.map((s, i) => (

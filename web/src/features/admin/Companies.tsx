@@ -9,7 +9,6 @@ import {
 } from '../../lib/queries';
 import { friendlyError, logoUrl } from '../../lib/supabase';
 import { checkLogoFile, LOGO_ACCEPT, removeCompanyLogo, uploadCompanyLogo } from '../../lib/images';
-import { money } from '../../lib/format';
 import type { Company, ProductWithRefs } from '../../lib/types';
 import { Button, Card, Confirm, Empty, Field, Input, PageHeader, Sheet, Skeleton } from '../../components/ui';
 import { listChild, listParent, Page } from '../../components/motion';
@@ -378,8 +377,7 @@ function AdminProductRow({ product: p, onOpen }: { product: ProductWithRefs; onO
         </p>
       </div>
       <div className="text-right">
-        <p className="tabular font-bold">{money(p.price_per_piece)}</p>
-        <p className="tabular text-xs text-ink-mute">{p.mrp ? `MRP ${money(p.mrp)}` : 'No MRP'}</p>
+        <p className="tabular font-bold">{p.packs.length} pack{p.packs.length === 1 ? '' : 's'}</p>
         <p className={clsx('text-xs font-semibold', p.is_active ? 'text-leaf' : 'text-ink-mute')}>{p.is_active ? 'Live' : 'Hidden'}</p>
       </div>
     </button>

@@ -27,7 +27,14 @@ export interface Profile {
 export interface DirectoryEntry extends Profile {
   order_count: number;
   last_order_at: string | null;
-  lifetime_value: number;
+  pieces_ordered: number;
+  packs_ordered: number;
+}
+
+export interface AdminInvite {
+  email: string;
+  invited_by: string | null;
+  created_at: string;
 }
 
 export interface Company {
@@ -79,8 +86,6 @@ export interface Product {
   name: string;
   sku: string | null;
   description: string | null;
-  price_per_piece: number;
-  mrp: number | null;
   /** Storage paths of uploaded photos, or full http(s) image URLs. */
   image_paths: string[];
   sizes: string[];
@@ -109,7 +114,6 @@ export interface Order {
   retailer_phone: string | null;
   city: string | null;
   total_pieces: number;
-  total_amount: number;
   cancel_reason: string | null;
   completed_at: string | null;
   cancelled_at: string | null;
@@ -128,10 +132,8 @@ export interface OrderItem {
   pack_label: string;
   composition: PackLine[];
   pieces_per_pack: number;
-  price_per_piece: number;
   packs: number;
   line_pieces: number;
-  line_total: number;
 }
 
 export interface OrderWithItems extends Order {
@@ -168,10 +170,11 @@ export interface Announcement {
 export interface DashboardStats {
   orders_today: number;
   open_orders: number;
-  month_value: number;
+  month_orders: number;
+  month_packs: number;
   month_pieces: number;
   retailers: number;
   pending_admins: number;
-  daily: { day: string; orders: number; value: number }[];
-  top_products: { product_name: string; company_name: string; pieces: number; value: number }[];
+  daily: { day: string; orders: number; pieces: number }[];
+  top_products: { product_name: string; company_name: string; pieces: number; packs: number }[];
 }

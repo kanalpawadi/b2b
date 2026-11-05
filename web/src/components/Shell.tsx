@@ -197,7 +197,7 @@ export function AdminShell({ items }: { items: NavItem[] }) {
           <Avatar name={me.full_name} className="size-9" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{me.full_name}</p>
-            <p className="text-[11.5px] text-paper/60">{me.is_owner ? 'Owner' : 'Admin'}</p>
+            <p className="text-[11.5px] text-paper/60">{me.is_owner ? 'Super admin' : 'Admin'}</p>
           </div>
           <button onClick={signOut} aria-label="Sign out" title="Sign out" className="grid size-9 place-items-center rounded-full text-paper/70 hover:bg-paper/10 hover:text-paper">
             <LogOut className="size-4" />

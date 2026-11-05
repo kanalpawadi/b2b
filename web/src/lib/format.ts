@@ -1,18 +1,7 @@
-const inr = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 });
-const inrWhole = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+// The app deals in packs and pieces only; there is deliberately no money formatter.
 const count = new Intl.NumberFormat('en-IN');
 
-export const money = (n: number) => inr.format(n);
-export const moneyWhole = (n: number) => inrWhole.format(n);
 export const num = (n: number) => count.format(n);
-
-/** ₹1.2L / ₹3.4Cr — how Indian traders actually say big numbers. */
-export function moneyShort(n: number): string {
-  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n >= 1e8 ? 0 : 1)}Cr`;
-  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n >= 1e6 ? 0 : 1)}L`;
-  if (n >= 1e3) return `₹${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}k`;
-  return inrWhole.format(n);
-}
 
 export function dateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', {

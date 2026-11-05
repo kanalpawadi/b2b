@@ -1,7 +1,7 @@
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
-import { imageUrl, supabase } from '../../lib/supabase';
-import { dateOnly, displayPhone, money, num } from '../../lib/format';
+import { supabase } from '../../lib/supabase';
+import { dateOnly, displayPhone, num } from '../../lib/format';
 import type { OrderItem, OrderWithItems, Profile } from '../../lib/types';
 import { BRAND, MSC_LOGO } from '../../components/Brand';
 
@@ -9,13 +9,17 @@ import { BRAND, MSC_LOGO } from '../../components/Brand';
 // the same whatever the app's CSS does), rendered off-screen, photographed
 // with html2canvas and placed on A4 pages by jsPDF. Both libraries load
 // only when someone actually downloads an invoice.
+//
+// It lists packs and quantities only: the app handles no prices at all.
 
 const A4_W = 794; // CSS px at 96 dpi
 const A4_H = Math.round(A4_W * (297 / 210));
 const MARGIN = 40;
+/** More numbered size columns than this won't fit on A4; sizes then go in one text column. */
+const MAX_SIZE_COLS = 12;
 
 const C = {
-  ink: '#1a1f2b', soft: '#4a4f5c', mute: '#857f70', line: '#e6dfd1', paper: '#f7f3ec',
+  ink: '#1a1f2b', soft: '#4a4f5c', mute: '#857f70', line: '#e6dfd1', grid: '#d9d1c1', paper: '#f7f3ec',
   indigo: '#1e2a4a', navy: '#2e3a8c', magenta: '#c2297b', marigold: '#e09a2c', leaf: '#3d7a55', madder: '#b4432e',
 };
 const display = '"Fraunces Variable", Georgia, serif';
@@ -25,34 +29,85 @@ interface History {
   position: number;
   total: number;
   completed: number;
-  lifetime: number;
+  packs: number;
+}
+
+/** One bill row: a design, with the pieces ordered in each of its sizes. */
+interface BillRow {
+  key: string;
+  company: string;
+  name: string;
+  trade: string | null;
+  sizes: string[];
+  qty: Record<string, number>;
+  packs: number;
+  pieces: number;
 }
 
 interface InvoiceData {
   order: OrderWithItems;
+  rows: BillRow[];
   buyer: Pick<Profile, 'full_name' | 'shop_name' | 'phone' | 'email' | 'gst_number' | 'area' | 'city' | 'state'> | null;
   history: History | null;
+}
+
+type ProductInfo = { id: string; sizes: string[]; trade: { name: string } | null };
+
+/** Groups the order's lines (one per size pack) into one row per design. */
+function billRows(items: OrderItem[], products: Map<string, ProductInfo>): BillRow[] {
+  const rows = new Map<string, BillRow>();
+  for (const it of items) {
+    const key = it.product_id ?? `${it.company_name}|${it.product_name}`;
+    const info = it.product_id ? products.get(it.product_id) : undefined;
+    let row = rows.get(key);
+    if (!row) {
+      row = { key, company: it.company_name, name: it.product_name, trade: info?.trade?.name ?? null, sizes: [...(info?.sizes ?? [])], qty: {}, packs: 0, pieces: 0 };
+      rows.set(key, row);
+    }
+    row.packs += it.packs;
+    row.pieces += it.line_pieces;
+    for (const line of it.composition) {
+      row.qty[line.size] = (row.qty[line.size] ?? 0) + line.qty * it.packs;
+      if (!row.sizes.includes(line.size)) row.sizes.push(line.size);  // product since changed or removed
+    }
+  }
+  // Sizes nobody ordered at the end of a list don't need a column.
+  for (const row of rows.values()) {
+    let last = row.sizes.length - 1;
+    while (last >= 0 && !row.qty[row.sizes[last]!]) last--;
+    row.sizes = row.sizes.slice(0, last + 1);
+  }
+  return [...rows.values()];
 }
 
 async function load(orderId: string): Promise<InvoiceData> {
   const { data: order, error } = await supabase.from('orders').select('*, items:order_items(*)').eq('id', orderId).single();
   if (error || !order) throw error ?? new Error('Order not found');
   const o = order as OrderWithItems;
-  if (!o.retailer_id) return { order: o, buyer: null, history: null };
 
-  const [{ data: buyer }, { data: past }] = await Promise.all([
+  const ids = [...new Set(o.items.map((i) => i.product_id).filter((x): x is string => Boolean(x)))];
+  const { data: prods } = ids.length
+    ? await supabase.from('products').select('id, sizes, trade:trades(name)').in('id', ids)
+    : { data: [] };
+  const products = new Map(((prods ?? []) as unknown as ProductInfo[]).map((p) => [p.id, p]));
+  const rows = billRows(o.items, products);
+  if (!o.retailer_id) return { order: o, rows, buyer: null, history: null };
+
+  const [{ data: buyer }, { data: past }, { data: dir }] = await Promise.all([
     supabase.from('profiles').select('full_name, shop_name, phone, email, gst_number, area, city, state').eq('id', o.retailer_id).maybeSingle(),
-    supabase.from('orders').select('id, status, total_amount, created_at').eq('retailer_id', o.retailer_id),
+    supabase.from('orders').select('id, status, created_at').eq('retailer_id', o.retailer_id),
+    supabase.from('user_directory').select('packs_ordered').eq('id', o.retailer_id).maybeSingle(),
   ]);
-  const rows = (past ?? []) as { id: string; status: string; total_amount: number; created_at: string }[];
+  const history = (past ?? []) as { id: string; status: string; created_at: string }[];
   return {
     order: o,
+    rows,
     buyer: buyer as InvoiceData['buyer'],
     history: {
-      position: rows.filter((r) => r.created_at <= o.created_at).length,
-      total: rows.length,
-      completed: rows.filter((r) => r.status === 'completed').length,
-      lifetime: rows.filter((r) => r.status !== 'cancelled').reduce((s, r) => s + Number(r.total_amount), 0),
+      position: history.filter((r) => r.created_at <= o.created_at).length,
+      total: history.length,
+      completed: history.filter((r) => r.status === 'completed').length,
+      packs: Number((dir as { packs_ordered?: number } | null)?.packs_ordered ?? 0),
     },
   };
 }
@@ -63,18 +118,20 @@ const ordinal = (n: number) => {
   return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]!);
 };
 
-function packText(it: OrderItem) {
-  if (it.composition.length === 1) return `Size ${it.composition[0]!.size} · pack of ${it.pieces_per_pack}`;
-  return `${it.pack_label} · ${it.composition.map((l) => `${l.size}×${l.qty}`).join(' ')}`;
-}
-
-function Invoice({ order: o, buyer, history }: InvoiceData) {
-  const packs = o.items.reduce((s, i) => s + i.packs, 0);
+function Invoice({ order: o, rows, buyer, history }: InvoiceData) {
+  const totalPacks = rows.reduce((s, r) => s + r.packs, 0);
+  const totalPieces = rows.reduce((s, r) => s + r.pieces, 0);
+  const cols = Math.max(1, ...rows.map((r) => r.sizes.length));
+  const compact = cols > MAX_SIZE_COLS;
+  // Column k's header lists every size that sits k-th in some row, stacked, as on a printed bill.
+  const heads = Array.from({ length: compact ? 0 : cols }, (_, k) => [...new Set(rows.map((r) => r.sizes[k]).filter(Boolean))] as string[]);
   const status = o.status === 'placed' ? { label: 'Open', bg: '#f8e7c8', fg: '#8a5a10' }
     : o.status === 'completed' ? { label: 'Completed', bg: '#dbeadf', fg: C.leaf } : { label: 'Cancelled', bg: '#f3dcd4', fg: C.madder };
   const address = buyer ? [buyer.area, buyer.city, buyer.state].filter(Boolean).join(', ') : o.city;
-  const th: React.CSSProperties = { padding: '10px 8px', whiteSpace: 'nowrap', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)', fontWeight: 700, textAlign: 'left' };
-  const td: React.CSSProperties = { padding: '10px 8px', fontSize: 12.5, color: C.ink, verticalAlign: 'middle' };
+
+  const cell: React.CSSProperties = { border: `1px solid ${C.grid}`, padding: '7px 6px', fontSize: 11.5, color: C.ink, verticalAlign: 'middle' };
+  const th: React.CSSProperties = { ...cell, background: C.indigo, color: '#fff', borderColor: C.indigo, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', textAlign: 'left' };
+  const sizeW = compact ? 0 : Math.max(26, Math.min(44, Math.floor(300 / cols)));
 
   return (
     <div style={{ width: A4_W, background: '#fff', fontFamily: sans, color: C.ink, position: 'relative' }}>
@@ -103,16 +160,15 @@ function Invoice({ order: o, buyer, history }: InvoiceData) {
         </div>
       </div>
 
-      {/* Bill to + history */}
-      <div data-block style={{ padding: `24px ${MARGIN}px 0`, display: 'flex', gap: 16 }}>
+      {/* Party + history */}
+      <div data-block style={{ padding: `22px ${MARGIN}px 0`, display: 'flex', gap: 16 }}>
         <div style={{ flex: 1.3, border: `1px solid ${C.line}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: C.mute }}>BILLED TO</div>
+          <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: C.mute }}>PARTY</div>
           <div style={{ fontFamily: display, fontSize: 19, fontWeight: 600, marginTop: 6 }}>{buyer?.shop_name ?? o.shop_name ?? o.retailer_name}</div>
           <div style={{ fontSize: 12.5, color: C.soft, marginTop: 2 }}>{buyer?.full_name ?? o.retailer_name}</div>
           <div style={{ fontSize: 12, color: C.soft, marginTop: 8, lineHeight: 1.6 }}>
             {address && <div>{address}</div>}
             {(buyer?.phone ?? o.retailer_phone) && <div>Mobile: {displayPhone(buyer?.phone ?? o.retailer_phone)}</div>}
-            {buyer?.email && <div>{buyer.email}</div>}
             {buyer?.gst_number && <div>GSTIN: <span style={{ fontFamily: 'ui-monospace, monospace' }}>{buyer.gst_number}</span></div>}
           </div>
         </div>
@@ -124,7 +180,7 @@ function Invoice({ order: o, buyer, history }: InvoiceData) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12 }}>
                 <Stat k="Total orders" v={num(history.total)} />
                 <Stat k="Completed" v={num(history.completed)} />
-                <div style={{ gridColumn: 'span 2' }}><Stat k="Business to date" v={money(history.lifetime)} /></div>
+                <div style={{ gridColumn: 'span 2' }}><Stat k="Packs ordered to date" v={num(history.packs)} /></div>
               </div>
             </>
           ) : (
@@ -133,77 +189,88 @@ function Invoice({ order: o, buyer, history }: InvoiceData) {
         </div>
       </div>
 
-      {/* Items */}
-      <div style={{ padding: `24px ${MARGIN}px 0` }}>
-        <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+      {/* Items: Sr · Company · Trade name · sizes · Packs · Total qty */}
+      <div style={{ padding: `22px ${MARGIN}px 0` }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <colgroup>
+            <col style={{ width: 30 }} />
+            <col style={{ width: compact ? 120 : 104 }} />
+            <col />
+            {compact ? <col style={{ width: 220 }} /> : heads.map((_, k) => <col key={k} style={{ width: sizeW }} />)}
+            <col style={{ width: 46 }} />
+            <col style={{ width: 54 }} />
+          </colgroup>
           <thead data-block>
-            <tr style={{ background: C.indigo }}>
-              <th style={{ ...th, borderTopLeftRadius: 10, width: 28, paddingLeft: 12 }}>#</th>
-              <th style={th}>Item</th>
-              <th style={th}>Pack</th>
+            <tr>
+              <th style={{ ...th, textAlign: 'center' }}>Sr</th>
+              <th style={th}>Company</th>
+              <th style={th}>Trade name</th>
+              {compact ? <th style={th}>Sizes (pieces)</th> : heads.map((labels, k) => (
+                <th key={k} style={{ ...th, textAlign: 'center', padding: '5px 2px', letterSpacing: 0, textTransform: 'none', fontSize: 9, lineHeight: 1.25 }}>
+                  {labels.slice(0, 4).map((l) => <div key={l} style={{ whiteSpace: 'nowrap', overflow: 'hidden' }}>{l}</div>)}
+                  {labels.length > 4 && <div style={{ opacity: 0.7 }}>+{labels.length - 4}</div>}
+                </th>
+              ))}
               <th style={{ ...th, textAlign: 'right' }}>Packs</th>
-              <th style={{ ...th, textAlign: 'right' }}>Pieces</th>
-              <th style={{ ...th, textAlign: 'right' }}>Rate / pc</th>
-              <th style={{ ...th, textAlign: 'right', borderTopRightRadius: 10, paddingRight: 12 }}>Amount</th>
+              <th style={{ ...th, textAlign: 'right' }}>Total qty</th>
             </tr>
           </thead>
           <tbody>
-            {o.items.map((it, i) => {
-              const url = imageUrl(it.image_path);
-              return (
-                <tr key={it.id} data-block style={{ background: i % 2 ? C.paper : '#fff' }}>
-                  <td style={{ ...td, color: C.mute, paddingLeft: 12, borderBottom: `1px solid ${C.line}` }}>{i + 1}</td>
-                  <td style={{ ...td, borderBottom: `1px solid ${C.line}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 40, borderRadius: 6, overflow: 'hidden', background: C.line, flexShrink: 0, display: 'grid', placeItems: 'center', fontFamily: display, fontSize: 13, color: C.indigo }}>
-                        {url ? <img src={url} crossOrigin="anonymous" alt="" data-thumb style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : it.product_name.slice(0, 1)}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700 }}>{it.product_name}</div>
-                        <div style={{ fontSize: 11, color: C.mute }}>{it.company_name}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style={{ ...td, color: C.soft, whiteSpace: 'nowrap', borderBottom: `1px solid ${C.line}` }}>{packText(it)}</td>
-                  <td style={{ ...td, textAlign: 'right', fontWeight: 700, borderBottom: `1px solid ${C.line}` }}>{num(it.packs)}</td>
-                  <td style={{ ...td, textAlign: 'right', borderBottom: `1px solid ${C.line}` }}>{num(it.line_pieces)}</td>
-                  <td style={{ ...td, textAlign: 'right', whiteSpace: 'nowrap', borderBottom: `1px solid ${C.line}` }}>{money(it.price_per_piece)}</td>
-                  <td style={{ ...td, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap', paddingRight: 12, borderBottom: `1px solid ${C.line}` }}>{money(it.line_total)}</td>
-                </tr>
-              );
-            })}
+            {rows.map((r, i) => (
+              <tr key={r.key} data-block style={{ background: i % 2 ? C.paper : '#fff' }}>
+                <td style={{ ...cell, textAlign: 'center', color: C.mute }}>{i + 1}</td>
+                <td style={{ ...cell, fontWeight: 700, fontSize: 11 }}>{r.company}</td>
+                <td style={cell}>
+                  <div style={{ fontWeight: 700 }}>{r.name}</div>
+                  {r.trade && <div style={{ fontSize: 10, color: C.mute }}>{r.trade}</div>}
+                </td>
+                {compact ? (
+                  <td style={{ ...cell, fontSize: 10.5, color: C.soft }}>{r.sizes.filter((s) => r.qty[s]).map((s) => `${s}×${r.qty[s]}`).join('  ')}</td>
+                ) : heads.map((_, k) => {
+                  const size = r.sizes[k];
+                  const q = size ? r.qty[size] : 0;
+                  return <td key={k} style={{ ...cell, textAlign: 'center', fontWeight: 700, padding: '7px 2px' }}>{q ? num(q) : ''}</td>;
+                })}
+                <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{num(r.packs)}</td>
+                <td style={{ ...cell, textAlign: 'right', fontWeight: 700 }}>{num(r.pieces)}</td>
+              </tr>
+            ))}
+            <tr data-block>
+              <td colSpan={3 + (compact ? 1 : heads.length)} style={{ ...cell, textAlign: 'right', fontWeight: 700, fontSize: 10.5, letterSpacing: '0.1em', textTransform: 'uppercase', background: C.paper }}>Total</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 800, background: C.paper }}>{num(totalPacks)}</td>
+              <td style={{ ...cell, textAlign: 'right', fontWeight: 800, background: C.paper }}>{num(totalPieces)}</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      {/* Totals */}
-      <div data-block style={{ padding: `20px ${MARGIN}px 0`, display: 'flex', justifyContent: 'space-between', gap: 24, alignItems: 'flex-start' }}>
+      {/* Totals + note */}
+      <div data-block style={{ padding: `18px ${MARGIN}px 0`, display: 'flex', justifyContent: 'space-between', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, fontSize: 12, color: C.soft, lineHeight: 1.6 }}>
           {o.note && <div style={{ background: C.paper, borderRadius: 10, padding: 12, marginBottom: 10 }}><b>Note from the shop:</b> {o.note}</div>}
           {o.cancel_reason && <div style={{ background: '#f3dcd4', color: C.madder, borderRadius: 10, padding: 12 }}><b>Cancelled:</b> {o.cancel_reason}</div>}
         </div>
-        <div style={{ width: 280 }}>
-          <Line k="Items" v={num(o.items.length)} />
-          <Line k="Packs" v={num(packs)} />
-          <Line k="Pieces" v={num(o.total_pieces)} />
-          <div style={{ marginTop: 10, borderRadius: 12, padding: '14px 16px', background: `linear-gradient(135deg, ${C.navy}, ${C.indigo})`, color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span style={{ fontSize: 11, letterSpacing: '0.14em', fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>ORDER TOTAL</span>
-            <span style={{ fontFamily: display, fontSize: 24, fontWeight: 600 }}>{money(o.total_amount)}</span>
+        <div style={{ width: 300, borderRadius: 12, padding: '14px 16px', background: `linear-gradient(135deg, ${C.navy}, ${C.indigo})`, color: '#fff', display: 'flex', justifyContent: 'space-around', textAlign: 'center' }}>
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>TOTAL PACKS</div>
+            <div style={{ fontFamily: display, fontSize: 26, fontWeight: 600 }}>{num(totalPacks)}</div>
+          </div>
+          <div style={{ width: 1, background: 'rgba(255,255,255,0.2)' }} />
+          <div>
+            <div style={{ fontSize: 10, letterSpacing: '0.14em', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>TOTAL QUANTITY</div>
+            <div style={{ fontFamily: display, fontSize: 26, fontWeight: 600 }}>{num(totalPieces)} <span style={{ fontSize: 13 }}>pcs</span></div>
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div data-block style={{ padding: `28px ${MARGIN}px ${MARGIN}px` }}>
-        <div style={{ borderTop: `1px dashed ${C.line}`, paddingTop: 16, display: 'flex', justifyContent: 'space-between', gap: 24, fontSize: 10.5, color: C.mute, lineHeight: 1.6 }}>
-          <div style={{ maxWidth: 440 }}>
-            Rates are as confirmed by {BRAND.name} when the order was placed. GST and freight are as per the final tax invoice.
-            This document is an order invoice for your records.
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: display, fontSize: 15, fontStyle: 'italic', color: C.indigo }}>Thank you for your business.</div>
-            <div>Generated {dateOnly(new Date().toISOString())}</div>
-          </div>
+      {/* Footer + signatures */}
+      <div data-block style={{ padding: `26px ${MARGIN}px ${MARGIN}px` }}>
+        <div style={{ borderTop: `1px dashed ${C.line}`, paddingTop: 14, fontSize: 10.5, color: C.mute, lineHeight: 1.6 }}>
+          This order invoice lists the packs and quantities ordered from {BRAND.name}.
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, marginTop: 40 }}>
+          <Signature label="Receiver’s signature" />
+          <Signature label={`for ${BRAND.name} · Authorised signatory`} align="right" />
         </div>
       </div>
     </div>
@@ -219,22 +286,22 @@ function Stat({ k, v }: { k: string; v: string }) {
   );
 }
 
-function Line({ k, v }: { k: string; v: string }) {
+function Signature({ label, align = 'left' }: { label: string; align?: 'left' | 'right' }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, padding: '5px 4px', color: C.soft, borderBottom: `1px solid ${C.line}` }}>
-      <span>{k}</span><b style={{ color: C.ink }}>{v}</b>
+    <div style={{ width: 260, textAlign: align }}>
+      <div style={{ height: 34, borderBottom: `1px solid ${C.grid}` }} />
+      <div style={{ fontSize: 10.5, color: C.soft, marginTop: 6 }}>{label}</div>
     </div>
   );
 }
 
-/** Waits for every image in the invoice; photos that can't load (no CORS, gone) are dropped, not fatal. */
+/** Waits for every image in the invoice (only the logo now) so it's in the capture. */
 async function imagesReady(root: HTMLElement) {
   const imgs = [...root.querySelectorAll('img')];
   await Promise.all(imgs.map((img) => (img.complete && img.naturalWidth ? Promise.resolve() : new Promise<void>((done) => {
-    const finish = () => { if (!img.naturalWidth && img.dataset.thumb !== undefined) img.remove(); done(); };
-    img.addEventListener('load', finish, { once: true });
-    img.addEventListener('error', finish, { once: true });
-    window.setTimeout(finish, 5000);
+    img.addEventListener('load', () => done(), { once: true });
+    img.addEventListener('error', () => done(), { once: true });
+    window.setTimeout(done, 5000);
   }))));
 }
 

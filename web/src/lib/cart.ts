@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-// The cart lives in the browser. Prices here are only for display: the
-// server re-reads every price inside create_order.
+// The cart lives in the browser. It holds no prices: Mukesh Sales prices
+// orders in its own billing, and create_order stores packs and pieces only.
 
 export interface CartLine {
   packId: string;
@@ -11,7 +11,6 @@ export interface CartLine {
   packLabel: string;
   packSummary: string;
   piecesPerPack: number;
-  pricePerPiece: number;
   imagePath: string | null;
   packs: number;
 }
@@ -113,8 +112,8 @@ export function cartTotals(lines: CartLine[]) {
   return lines.reduce(
     (t, l) => {
       const pieces = l.piecesPerPack * l.packs;
-      return { packs: t.packs + l.packs, pieces: t.pieces + pieces, amount: t.amount + pieces * l.pricePerPiece };
+      return { packs: t.packs + l.packs, pieces: t.pieces + pieces };
     },
-    { packs: 0, pieces: 0, amount: 0 },
+    { packs: 0, pieces: 0 },
   );
 }

@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { ArrowUpRight, Megaphone, Send, Trash2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAnnouncements, useDashboard, useDeleteAnnouncement, useNotifications, useOrders, usePostAnnouncement } from '../../lib/queries';
-import { dateTime, money, moneyShort, num, relative } from '../../lib/format';
+import { dateTime, num, relative } from '../../lib/format';
 import { friendlyError } from '../../lib/supabase';
 import { Button, Card, Input, OrderPill, PageHeader, Skeleton, TextArea } from '../../components/ui';
 import { AlertIcon, alertLink } from '../notifications/Alerts';
@@ -29,7 +29,7 @@ function Stat({ label, value, format, tone, to }: { label: string; value: number
 
 function DailyChart({ daily }: { daily: DashboardStats['daily'] }) {
   const [hover, setHover] = useState<number | null>(null);
-  const max = Math.max(1, ...daily.map((d) => d.value));
+  const max = Math.max(1, ...daily.map((d) => d.pieces));
   const active = hover ?? daily.length - 1;
   const cur = daily[active];
 
@@ -38,22 +38,22 @@ function DailyChart({ daily }: { daily: DashboardStats['daily'] }) {
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <p className="label-caps">Last 14 days</p>
-          <p className="mt-1 font-display text-2xl font-medium">Order value</p>
+          <p className="mt-1 font-display text-2xl font-medium">Pieces ordered</p>
         </div>
         {cur && (
           <div className="text-right">
-            <p className="tabular font-display text-2xl font-medium">{money(cur.value)}</p>
+            <p className="tabular font-display text-2xl font-medium">{num(cur.pieces)} pcs</p>
             <p className="text-xs text-ink-mute">{new Date(cur.day).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })} · {cur.orders} orders</p>
           </div>
         )}
       </div>
       <div className="mt-6 flex h-44 items-end gap-1.5 sm:gap-2" onMouseLeave={() => setHover(null)}>
         {daily.map((d, i) => (
-          <button key={d.day} className="group flex h-full flex-1 flex-col justify-end" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} aria-label={`${d.day}: ${money(d.value)}`}>
+          <button key={d.day} className="group flex h-full flex-1 flex-col justify-end" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} aria-label={`${d.day}: ${d.pieces} pieces`}>
             <motion.div
               className={clsx('w-full rounded-t-md rounded-b-sm transition-colors', i === active ? 'bg-marigold' : 'bg-indigo/80 group-hover:bg-indigo')}
               initial={{ height: 0 }}
-              animate={{ height: `${Math.max(3, (d.value / max) * 100)}%` }}
+              animate={{ height: `${Math.max(3, (d.pieces / max) * 100)}%` }}
               transition={{ duration: 0.8, delay: i * 0.035, ease }}
             />
           </button>
@@ -93,7 +93,7 @@ export function Dashboard() {
         <motion.div variants={listParent} initial="hidden" animate="show" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Stat label="Open orders" value={s.open_orders} format={num} tone="accent" to="/admin/orders" />
           <Stat label="Orders today" value={s.orders_today} format={num} />
-          <Stat label="This month" value={s.month_value} format={moneyShort} tone="dark" />
+          <Stat label="Packs this month" value={s.month_packs} format={num} tone="dark" />
           <Stat label="Active retailers" value={s.retailers} format={num} to="/admin/users" />
         </motion.div>
       )}
@@ -119,7 +119,7 @@ export function Dashboard() {
                   <li key={p.product_name + p.company_name}>
                     <div className="flex items-baseline justify-between gap-3 text-sm">
                       <span className="min-w-0 truncate"><span className="mr-2 font-display text-ink-mute italic">{i + 1}</span><span className="font-semibold">{p.product_name}</span> <span className="text-ink-mute">· {p.company_name}</span></span>
-                      <span className="tabular shrink-0 font-semibold">{num(p.pieces)} pcs</span>
+                      <span className="tabular shrink-0 font-semibold">{num(p.packs)} packs <span className="font-normal text-ink-mute">· {num(p.pieces)} pcs</span></span>
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-paper-2">
                       <motion.div className="h-full rounded-full bg-indigo" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.9, delay: 0.2 + i * 0.08, ease }} />
@@ -146,7 +146,7 @@ export function Dashboard() {
                 <Link to={`/admin/orders/${o.id}`} className="flex items-center gap-3 py-3 text-sm hover:text-indigo">
                   <span className="tabular w-14 font-display font-semibold text-ink-mute">#{o.order_number}</span>
                   <span className="min-w-0 flex-1 truncate font-semibold">{o.shop_name ?? o.retailer_name}<span className="font-normal text-ink-mute"> · {relative(o.created_at)}</span></span>
-                  <span className="tabular hidden font-semibold sm:block">{money(o.total_amount)}</span>
+                  <span className="tabular hidden font-semibold sm:block">{num(o.total_pieces)} pcs</span>
                   <OrderPill status={o.status} />
                 </Link>
               </li>

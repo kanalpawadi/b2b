@@ -381,9 +381,9 @@ function Why() {
       art: <ShoppingBag className="size-9 text-indigo" />,
     },
     {
-      title: 'Prices confirmed by the office',
-      body: 'Rates are always checked by Mukesh Sales when you order, so the bill matches what you saw.',
-      art: <span className="font-display text-4xl font-medium text-indigo italic">₹</span>,
+      title: 'Just packs and sizes',
+      body: 'Pick a design, choose how many packs of each size, and the office takes it from there.',
+      art: <PackageCheck className="size-9 text-indigo" />,
     },
     {
       title: 'Trade only, verified',

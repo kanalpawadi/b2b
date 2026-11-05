@@ -16,6 +16,7 @@ const icons: Record<string, React.ReactNode> = {
   order_cancelled: <PackageX className="size-4" />,
   retailer_joined: <UserPlus className="size-4" />,
   admin_request: <UserPlus className="size-4" />,
+  admin_joined: <UserPlus className="size-4" />,
   company_added: <Building2 className="size-4" />,
   product_added: <PackagePlus className="size-4" />,
 };
@@ -37,7 +38,7 @@ export function alertLink(n: Pick<Notification, 'kind' | 'order_id' | 'company_i
   if (n.order_id) return admin ? `/admin/orders/${n.order_id}` : `/orders/${n.order_id}`;
   if (admin && n.company_id && n.product_id) return `/admin/companies/${n.company_id}/products/${n.product_id}`;
   if (admin && n.company_id) return `/admin/companies/${n.company_id}`;
-  if (admin && (n.kind === 'admin_request' || n.kind === 'retailer_joined')) return '/admin/users';
+  if (admin && (n.kind === 'admin_request' || n.kind === 'retailer_joined' || n.kind === 'admin_joined')) return '/admin/users';
   return null;
 }
 

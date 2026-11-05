@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { Bell, Building2, ClipboardList, LayoutDashboard, Users as UsersIcon } from 'lucide-react';
 import { isConfigured } from './lib/supabase';
 import { useAuth } from './features/auth/AuthProvider';
-import { AdminJoin, ForgotPassword, Onboarding, Register, ResetPassword, SignIn, StaffRequest, wantsStaffAccess } from './features/auth/AuthScreens';
+import { AdminJoin, AuthConfirm, ForgotPassword, Onboarding, Register, ResetPassword, SignIn, StaffRequest, wantsStaffAccess } from './features/auth/AuthScreens';
 import { AwaitingApproval, Blocked, ProfileMissing, SetupNeeded } from './features/auth/GateScreens';
 import { AdminShell, RetailerShell, type NavItem } from './components/Shell';
 import { FullScreenLoader } from './components/ui';
@@ -46,6 +46,7 @@ export function App() {
     <Routes>
       {/* The reset email signs the user in, so this works in both states. */}
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/auth/confirm" element={<AuthConfirm />} />
       {!session ? (
         <>
           <Route index element={<Landing />} />

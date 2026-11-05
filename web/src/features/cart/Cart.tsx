@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { cart, cartTotals, useCart } from '../../lib/cart';
 import { usePlaceOrder } from '../../lib/queries';
 import { friendlyError } from '../../lib/supabase';
-import { money, num } from '../../lib/format';
+import { num } from '../../lib/format';
 import { Button, Card, Empty, PageHeader, Stepper, TextArea } from '../../components/ui';
 import { ease, Page, Ticker } from '../../components/motion';
 import { ProductImage } from '../catalogue/Swatch';
@@ -68,8 +68,8 @@ export function Cart() {
                     <div className="mt-auto flex items-end justify-between gap-2 pt-2">
                       <Stepper size="sm" value={l.packs} min={1} onChange={(n) => cart.setPacks(l.packId, n)} />
                       <div className="text-right">
-                        <p className="tabular font-bold">{money(l.packs * l.piecesPerPack * l.pricePerPiece)}</p>
-                        <p className="tabular text-xs text-ink-mute">{num(l.packs * l.piecesPerPack)} pcs</p>
+                        <p className="tabular font-bold">{num(l.packs * l.piecesPerPack)} pcs</p>
+                        <p className="tabular text-xs text-ink-mute">{num(l.packs)} pack{l.packs === 1 ? '' : 's'} × {l.piecesPerPack}</p>
                       </div>
                     </div>
                   </div>
@@ -82,16 +82,16 @@ export function Cart() {
         <div className="lg:sticky lg:top-24 lg:self-start">
           <Card className="overflow-hidden">
             <div className="weave grain relative p-5 text-paper">
-              <p className="relative text-[11px] font-semibold tracking-[0.16em] text-paper/60 uppercase">Estimated total</p>
-              <p className="relative mt-1 font-display text-[40px] leading-none font-medium"><Ticker value={totals.amount} format={money} /></p>
-              <p className="relative mt-2 text-sm text-paper/70">{num(totals.packs)} packs · {num(totals.pieces)} pieces</p>
+              <p className="relative text-[11px] font-semibold tracking-[0.16em] text-paper/60 uppercase">Total packs</p>
+              <p className="relative mt-1 font-display text-[40px] leading-none font-medium"><Ticker value={totals.packs} format={num} /></p>
+              <p className="relative mt-2 text-sm text-paper/70">{num(totals.pieces)} pieces · {num(lines.length)} line{lines.length === 1 ? '' : 's'}</p>
             </div>
             <div className="space-y-4 p-5">
               <div>
                 <label htmlFor="note" className="mb-1.5 block text-[13px] font-semibold text-ink-soft">Note for the office (optional)</label>
                 <TextArea id="note" value={note} onChange={(e) => cart.setNote(e.target.value)} placeholder="Delivery timing, transport, colours…" maxLength={500} />
               </div>
-              <p className="text-[12.5px] leading-relaxed text-ink-mute">Prices are confirmed by Mukesh Sales when the order is placed. Taxes and freight as per invoice.</p>
+              <p className="text-[12.5px] leading-relaxed text-ink-mute">Mukesh Sales confirms your order and lets you know the moment it’s packed and dispatched.</p>
               <Button size="lg" className="w-full" onClick={submit} loading={place.isPending}>
                 Place order <ArrowRight className="size-4" />
               </Button>
@@ -112,7 +112,7 @@ function Placed({ order, onView }: { order: Order; onView: () => void }) {
         </motion.div>
         <p className="label-caps">Order #{order.order_number}</p>
         <h1 className="mt-2 text-[40px] leading-tight font-medium">Order <em className="text-indigo">placed.</em></h1>
-        <p className="mx-auto mt-3 max-w-sm text-ink-soft">{num(order.total_pieces)} pieces worth {money(order.total_amount)}. We’ll notify you as soon as it’s dispatched.</p>
+        <p className="mx-auto mt-3 max-w-sm text-ink-soft">{num(order.total_pieces)} pieces are on their way to being packed. We’ll notify you as soon as it’s dispatched.</p>
         <p className="mx-auto mt-2 max-w-sm text-sm text-ink-mute">Your invoice is downloading as a PDF.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-2">
           <InvoiceButton orderId={order.id} auto variant="accent" />

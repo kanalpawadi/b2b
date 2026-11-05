@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { z } from 'zod';
 import { ArrowRight, Eye, EyeOff, LogOut, MailCheck, ShieldCheck, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { GOOGLE_ENABLED, STAFF_INTENT_KEY, friendlyError, setStaffIntent, signInWithGoogle, supabase } from '../../lib/supabase';
 import { toE164 } from '../../lib/format';
 import { Button, Field, FullScreenLoader, Input, Select } from '../../components/ui';
@@ -101,7 +102,7 @@ function CheckInbox({ address, kind, onBack }: { address: string; kind: 'signup'
       </motion.div>
       <p className="text-[15px] leading-relaxed text-ink-soft">
         We sent a link to <span className="font-semibold text-ink">{address}</span>.{' '}
-        {kind === 'signup' ? 'Open it on this device to confirm your email and sign in.' : 'Open it on this device to choose a new password.'}
+        {kind === 'signup' ? 'Open it to confirm your email and sign in.' : 'Open it to choose a new password.'}
       </p>
       <p className="text-[13px] text-ink-mute">Can’t see it? Check Spam or Promotions. It can take a minute to arrive.</p>
       <div className="flex flex-wrap items-center gap-3">
@@ -240,7 +241,7 @@ export function AdminJoin() {
   return (
     <AuthLayout
       title={<>Staff <em className="text-indigo">access.</em></>}
-      subtitle="The owner approves every new admin. The very first admin of a new shop is approved automatically."
+      subtitle="The super admin approves every new admin, or adds you directly. The very first admin becomes the super admin."
       footer={<Link to="/sign-in" className="font-semibold text-indigo hover:underline">← Back to sign in</Link>}
     >
       <SignUpForm staff />
@@ -287,6 +288,46 @@ export function ForgotPassword() {
           </motion.form>
         )}
       </AnimatePresence>
+    </AuthLayout>
+  );
+}
+
+const LINK_TYPES: EmailOtpType[] = ['signup', 'email', 'recovery', 'invite', 'magiclink', 'email_change'];
+
+/**
+ * Where email links land (see README: Supabase email templates). The link
+ * carries a one-time token rather than a PKCE code, so it works on any
+ * device or mail app, not just the browser that asked for it.
+ */
+export function AuthConfirm() {
+  const [params] = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const ran = useRef(false);
+
+  useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
+    const tokenHash = params.get('token_hash');
+    const type = params.get('type') as EmailOtpType | null;
+    if (!tokenHash || !type || !LINK_TYPES.includes(type)) {
+      setError('This link is incomplete. Open the newest email from us, or ask for a new link.');
+      return;
+    }
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error: err }) => {
+      if (err) return setError(friendlyError(err));
+      // Only ever go to our own pages: never a destination taken from the link.
+      window.location.replace(type === 'recovery' ? '/reset-password' : '/');
+    });
+  }, [params]);
+
+  if (!error) return <FullScreenLoader />;
+  return (
+    <AuthLayout title={<>Link <em className="text-indigo">didn’t work.</em></>} subtitle={error}
+      footer={<Link to="/sign-in" className="font-semibold text-indigo hover:underline">Go to sign in</Link>}>
+      <div className="flex flex-wrap gap-2">
+        <Link to="/forgot"><Button variant="outline">Reset password</Button></Link>
+        <Link to="/register"><Button variant="ghost">Register again</Button></Link>
+      </div>
     </AuthLayout>
   );
 }

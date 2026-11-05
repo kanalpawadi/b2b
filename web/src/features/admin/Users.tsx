@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { ArrowLeft, Ban, Check, ChevronRight, Phone, ShieldCheck, Trash2, Users as UsersIcon } from 'lucide-react';
+import { ArrowLeft, Ban, Check, ChevronRight, MailPlus, Phone, ShieldCheck, Trash2, Users as UsersIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { useDeleteAccount, useDirectory, useDirectoryEntry, useOrders, useSetAccountStatus } from '../../lib/queries';
+import { useAdminInvites, useCancelInvite, useDeleteAccount, useDirectory, useDirectoryEntry, useInviteAdmin, useOrders, useSetAccountStatus } from '../../lib/queries';
 import { friendlyError } from '../../lib/supabase';
-import { dateOnly, displayPhone, money, moneyShort, num, relative } from '../../lib/format';
+import { dateOnly, displayPhone, num, relative } from '../../lib/format';
 import type { DirectoryEntry } from '../../lib/types';
 import { AccountPill, Avatar, Button, Card, Confirm, Empty, Field, Input, OrderPill, PageHeader, Segmented, Skeleton } from '../../components/ui';
 import { listChild, listParent, Page } from '../../components/motion';
@@ -14,6 +14,7 @@ import { useMe } from '../auth/AuthProvider';
 type Tab = 'retailers' | 'admins' | 'pending';
 
 export function Users() {
+  const me = useMe();
   const [params, setParams] = useSearchParams();
   const tab = (params.get('tab') as Tab) || 'retailers';
   const [search, setSearch] = useState('');
@@ -27,20 +28,22 @@ export function Users() {
 
   return (
     <Page>
-      <PageHeader eyebrow="People" title={<>Retailers <em className="text-indigo">&amp;</em> staff</>} />
+      <PageHeader eyebrow="People" title={<>Users <em className="text-indigo">&amp;</em> admins</>} />
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <Segmented id="users" value={tab} onChange={(t) => setParams({ tab: t })} options={[
-          { value: 'retailers', label: 'Retailers' },
+          { value: 'retailers', label: 'Users' },
           { value: 'admins', label: 'Admins' },
           { value: 'pending', label: <>Requests{pending.length > 0 && <span className="ml-1.5 rounded-full bg-marigold px-1.5 text-[11px] text-indigo">{pending.length}</span>}</> },
         ]} />
         <Input className="h-10 max-w-xs rounded-full" placeholder="Name, shop, city, phone or email" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
+      {tab === 'admins' && me.is_owner && <AddAdmin />}
+
       {dir.isPending ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20" />)}</div>
       ) : !rows.length ? (
-        <Empty icon={<UsersIcon className="size-7" />} title={tab === 'pending' ? 'No requests' : 'Nobody here yet'} body={tab === 'retailers' ? 'Retailers appear here once they register and verify their number.' : tab === 'pending' ? 'New admin requests will wait here for the owner.' : 'Only you so far.'} />
+        <Empty icon={<UsersIcon className="size-7" />} title={tab === 'pending' ? 'No requests' : 'Nobody here yet'} body={tab === 'retailers' ? 'Retailers appear here once they register and confirm their email.' : tab === 'pending' ? 'New admin requests wait here for the super admin.' : 'Only you so far.'} />
       ) : (
         <motion.ul key={tab} variants={listParent} initial="hidden" animate="show" className="space-y-2">
           {rows.map((u) => (
@@ -54,6 +57,60 @@ export function Users() {
   );
 }
 
+/** Super admin only: add an admin by email, and see who hasn't signed up yet. */
+function AddAdmin() {
+  const invites = useAdminInvites(true);
+  const invite = useInviteAdmin();
+  const cancel = useCancelInvite();
+  const [address, setAddress] = useState('');
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const v = address.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return toast.error('Enter a valid email address');
+    invite.mutate(v, {
+      onSuccess: (r) => {
+        setAddress('');
+        toast.success(r === 'invited' ? `${v} can now sign up as an admin` : `${v} is now an admin`, {
+          description: r === 'invited' ? 'They become an admin as soon as they register and confirm their email.' : undefined,
+        });
+      },
+      onError: (err) => toast.error(friendlyError(err)),
+    });
+  };
+
+  return (
+    <Card className="mb-6 p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-indigo-100 text-indigo"><MailPlus className="size-5" /></span>
+        <div className="min-w-0">
+          <p className="font-display text-xl font-medium">Add an admin</p>
+          <p className="text-sm text-ink-mute">Enter their email. If they already have an account they become an admin now; otherwise as soon as they register.</p>
+        </div>
+      </div>
+      <form onSubmit={submit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Input type="email" inputMode="email" autoComplete="off" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="staff@example.com" className="h-11 sm:flex-1" />
+        <Button type="submit" loading={invite.isPending} icon={<MailPlus className="size-4" />}>Add admin</Button>
+      </form>
+      {!!invites.data?.length && (
+        <div className="mt-4">
+          <p className="label-caps mb-2">Waiting to sign up</p>
+          <ul className="divide-y divide-line rounded-2xl border border-line">
+            {invites.data.map((i) => (
+              <li key={i.email} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                <span className="min-w-0 flex-1 truncate font-semibold">{i.email}</span>
+                <span className="shrink-0 text-xs text-ink-mute">{relative(i.created_at)}</span>
+                <button onClick={() => cancel.mutate(i.email, { onError: (e) => toast.error(friendlyError(e)) })} aria-label={`Cancel invite for ${i.email}`}
+                  className="grid size-8 shrink-0 place-items-center rounded-full text-ink-mute hover:bg-madder-100 hover:text-madder"><X className="size-4" /></button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function UserRow({ u }: { u: DirectoryEntry }) {
   return (
     <Link to={`/admin/users/${u.id}`} className="group flex items-center gap-4 rounded-2xl border border-line bg-card p-4 transition hover:border-line-strong hover:shadow-[var(--shadow-lift)]">
@@ -62,13 +119,13 @@ function UserRow({ u }: { u: DirectoryEntry }) {
         <div className="flex items-center gap-2">
           <p className="truncate font-semibold">{u.shop_name ?? u.full_name}</p>
           {u.status !== 'active' && <AccountPill status={u.status} />}
-          {u.is_owner && <span className="rounded-full bg-indigo px-2 py-0.5 text-[10.5px] font-bold text-paper">Owner</span>}
+          {u.is_owner && <span className="rounded-full bg-indigo px-2 py-0.5 text-[10.5px] font-bold text-paper">Super admin</span>}
         </div>
         <p className="truncate text-sm text-ink-mute">{u.shop_name ? `${u.full_name} · ` : ''}{u.city ?? u.email ?? displayPhone(u.phone)}</p>
       </div>
       {u.role === 'retailer' && (
         <div className="hidden text-right sm:block">
-          <p className="tabular font-bold">{moneyShort(Number(u.lifetime_value))}</p>
+          <p className="tabular font-bold">{num(Number(u.packs_ordered))} packs</p>
           <p className="text-xs text-ink-mute">{u.order_count} orders{u.last_order_at ? ` · ${relative(u.last_order_at)}` : ''}</p>
         </div>
       )}
@@ -123,7 +180,7 @@ export function UserDetail() {
         <Card className="h-fit p-6">
           <Avatar name={u.shop_name ?? u.full_name} className="size-16 text-xl" />
           <h1 className="mt-4 text-[28px] leading-tight font-medium">{u.shop_name ?? u.full_name}</h1>
-          <p className="text-sm text-ink-soft">{u.shop_name ? u.full_name : u.role === 'admin' ? (u.is_owner ? 'Owner' : 'Admin') : 'Retailer'}</p>
+          <p className="text-sm text-ink-soft">{u.shop_name ? u.full_name : u.role === 'admin' ? (u.is_owner ? 'Super admin' : 'Admin') : 'Retailer'}</p>
           <div className="mt-3"><AccountPill status={u.status} /></div>
           <div className="stitch my-5" />
           <dl className="space-y-2.5 text-sm">
@@ -132,7 +189,7 @@ export function UserDetail() {
             {u.gst_number && <Row k="GSTIN" v={<span className="font-mono text-[13px]">{u.gst_number}</span>} />}
             {(u.area || u.city || u.state) && <Row k="Location" v={[u.area, u.city, u.state].filter(Boolean).join(', ')} />}
             <Row k="Joined" v={dateOnly(u.created_at)} />
-            {u.role === 'retailer' && <Row k="Business" v={`${money(Number(u.lifetime_value))} · ${u.order_count} orders`} />}
+            {u.role === 'retailer' && <Row k="Ordered" v={`${num(Number(u.packs_ordered))} packs · ${num(Number(u.pieces_ordered))} pcs · ${u.order_count} orders`} />}
           </dl>
           {canManage && (
             <div className="mt-6 flex gap-2">
@@ -162,8 +219,8 @@ export function UserDetail() {
                   <li key={o.id}>
                     <Link to={`/admin/orders/${o.id}`} className="flex items-center gap-3 p-4 text-sm transition hover:bg-paper/60">
                       <span className="tabular w-14 font-display font-semibold text-ink-mute">#{o.order_number}</span>
-                      <span className="flex-1 text-ink-soft">{dateOnly(o.created_at)} · {num(o.total_pieces)} pcs</span>
-                      <span className="tabular font-semibold">{money(o.total_amount)}</span>
+                      <span className="flex-1 text-ink-soft">{dateOnly(o.created_at)}</span>
+                      <span className="tabular font-semibold">{num(o.total_pieces)} pcs</span>
                       <OrderPill status={o.status} />
                     </Link>
                   </li>

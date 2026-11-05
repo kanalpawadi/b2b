@@ -1,17 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import type {
-  Announcement, Company, CompanyTrade, DashboardStats, DirectoryEntry, Notification, Order, OrderStatus, OrderWithItems,
+  AdminInvite, Announcement, Company, CompanyTrade, DashboardStats, DirectoryEntry, Notification, Order, OrderStatus, OrderWithItems,
   Product, ProductWithRefs, Trade,
 } from './types';
 
-async function unwrap<T>(p: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
+async function unwrap<T>(p: PromiseLike<{ data: unknown; error: unknown }>): Promise<T> {
   const { data, error } = await p;
   if (error) throw error;
   return data as T;
 }
 
-const PRODUCT_SELECT = '*, company:companies(id,name,logo_path), trade:trades(id,name), packs:product_packs(*)';
+// Columns listed on purpose: prices (price_per_piece, mrp) aren't readable by any browser.
+const PRODUCT_SELECT = 'id, company_id, trade_id, name, sku, description, image_paths, sizes, colours, pack_of, is_active, created_at, updated_at, company:companies(id,name,logo_path), trade:trades(id,name), packs:product_packs(*)';
 
 function sortPacks(p: ProductWithRefs): ProductWithRefs {
   return { ...p, packs: [...p.packs].sort((a, b) => a.sort_order - b.sort_order) };
@@ -154,8 +155,6 @@ export interface ProductInput {
   trade_id: string | null;
   trade_name: string | null;
   name: string;
-  rate: number;
-  mrp: number;
   colours: string[];
   sizes: string[];
   image_paths: string[];
@@ -170,7 +169,7 @@ export function useSaveProduct() {
     mutationFn: ({ id, input }: { id?: string; input: ProductInput }) =>
       unwrap<Product>(supabase.rpc('save_product', {
         p_id: id ?? null, p_company_id: input.company_id, p_trade_id: input.trade_id, p_trade_name: input.trade_name,
-        p_name: input.name, p_rate: input.rate, p_mrp: input.mrp, p_colours: input.colours, p_sizes: input.sizes,
+        p_name: input.name, p_colours: input.colours, p_sizes: input.sizes,
         p_image_paths: input.image_paths, p_pack_of: input.pack_of, p_is_active: input.is_active,
       })),
     onSuccess: (p) => {
@@ -319,6 +318,35 @@ export function useDeleteAccount() {
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
     },
+  });
+}
+
+/** Emails the super admin has added as admins who haven't signed up yet. */
+export function useAdminInvites(enabled: boolean) {
+  return useQuery({
+    queryKey: ['admin-invites'],
+    enabled,
+    queryFn: () => unwrap<AdminInvite[]>(supabase.from('admin_invites').select('*').order('created_at', { ascending: false })),
+  });
+}
+
+export function useInviteAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => unwrap<'invited' | 'promoted' | 'approved'>(supabase.rpc('invite_admin', { p_email: email })),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-invites'] });
+      qc.invalidateQueries({ queryKey: ['directory'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useCancelInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (email: string) => unwrap(supabase.from('admin_invites').delete().eq('email', email)),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-invites'] }),
   });
 }
 

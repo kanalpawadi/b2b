@@ -9,7 +9,6 @@ const line = {
   packLabel: 'Size 85',
   packSummary: 'S×1 · M×2',
   piecesPerPack: 3,
-  pricePerPiece: 250,
   imagePath: null,
 };
 
@@ -27,9 +26,9 @@ describe('cart', () => {
     expect(cart.snapshot().lines[0]!.packs).toBe(5);
   });
 
-  it('totals pieces and amount from packs', () => {
+  it('totals packs and pieces, with no amount', () => {
     cart.add(line, 4);
-    expect(cartTotals(cart.snapshot().lines)).toEqual({ packs: 4, pieces: 12, amount: 3000 });
+    expect(cartTotals(cart.snapshot().lines)).toEqual({ packs: 4, pieces: 12 });
   });
 
   it('removes a line when quantity drops to zero', () => {

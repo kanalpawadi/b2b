@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { useCompany, useDeleteProduct, useProduct, useSaveProduct, useTrades } from '../../lib/queries';
 import { friendlyError, isWebUrl } from '../../lib/supabase';
 import { removeProductImages, uploadProductImage } from '../../lib/images';
-import { money } from '../../lib/format';
 import { Button, Card, Confirm, Empty, Field, Input, PageHeader, Select, Skeleton, Spinner, Toggle } from '../../components/ui';
 import { Page } from '../../components/motion';
 import { Breadcrumbs } from '../../components/Breadcrumbs';
@@ -19,10 +18,8 @@ const NEW_TRADE = '__new__';
 const MAX_IMAGES = 8;
 const SIZE_HINTS = ['S', 'M', 'L', 'XL', 'XXL', '80', '85', '90', '95', '100', 'Free Size'];
 
-type Errors = Partial<Record<'name' | 'trade' | 'rate' | 'mrp' | 'sizes' | 'images' | 'pack_of', string>>;
+type Errors = Partial<Record<'name' | 'trade' | 'sizes' | 'images' | 'pack_of', string>>;
 
-/** Decimal with up to two places, no sign. */
-const isAmount = (v: string) => /^\d+(\.\d{1,2})?$/.test(v.trim());
 
 export function ProductFormPage() {
   const { companyId, productId } = useParams();
@@ -56,8 +53,6 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
     name: product?.name ?? '',
     tradeId: product?.trade_id ?? '',
     newTrade: '',
-    rate: product ? String(product.price_per_piece) : '',
-    mrp: product?.mrp ? String(product.mrp) : '',
     packOf: product?.pack_of ? String(product.pack_of) : '',
     isActive: product?.is_active ?? true,
   });
@@ -113,9 +108,6 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
     if (!f.name.trim()) e.name = 'Enter the product name.';
     if (!f.tradeId) e.trade = 'Choose a trade.';
     else if (f.tradeId === NEW_TRADE && !f.newTrade.trim()) e.trade = 'Type the new trade’s name.';
-    if (!isAmount(f.rate) || Number(f.rate) <= 0) e.rate = 'Enter a rate above zero, e.g. 450 or 450.50.';
-    if (!isAmount(f.mrp) || Number(f.mrp) <= 0) e.mrp = 'Enter the MRP, e.g. 899.';
-    else if (!e.rate && Number(f.mrp) < Number(f.rate)) e.mrp = 'MRP can’t be lower than the rate.';
     if (!sizes.length) e.sizes = 'Add at least one size.';
     if (!/^\d+$/.test(f.packOf.trim()) || Number(f.packOf) < 1 || Number(f.packOf) > 999) e.pack_of = 'Enter a whole number of pieces, 1 to 999.';
     if (urlDraft.trim()) e.images = 'Press Add to include the image address you typed, or clear it.';
@@ -136,8 +128,6 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
         trade_id: newTrade ? null : f.tradeId,
         trade_name: newTrade ? f.newTrade.trim() : null,
         name: f.name.trim(),
-        rate: Number(f.rate),
-        mrp: Number(f.mrp),
         colours, sizes, image_paths: images,
         pack_of: Number(f.packOf),
         is_active: f.isActive,
@@ -163,7 +153,6 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
   };
 
   const legacyPacks = product?.packs.some((k) => k.composition.length > 1);
-  const perPack = Number(f.rate) > 0 && Number(f.packOf) > 0 ? Number(f.rate) * Number(f.packOf) : 0;
 
   return (
     <Page>
@@ -203,13 +192,7 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
             </div>
           </Field>
 
-          <div className="grid gap-5 sm:grid-cols-3">
-            <Field label="Rate (wholesale, per piece)" htmlFor="prate" error={errors.rate}>
-              <Input id="prate" prefix="₹" inputMode="decimal" value={f.rate} invalid={!!errors.rate} placeholder="0.00" onChange={(e) => set({ rate: e.target.value.replace(/[^\d.]/g, '') }, 'rate')} />
-            </Field>
-            <Field label="MRP" htmlFor="pmrp" error={errors.mrp}>
-              <Input id="pmrp" prefix="₹" inputMode="decimal" value={f.mrp} invalid={!!errors.mrp} placeholder="0.00" onChange={(e) => set({ mrp: e.target.value.replace(/[^\d.]/g, '') }, 'mrp')} />
-            </Field>
+          <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Pack of (pieces)" htmlFor="ppack" error={errors.pack_of}>
               <Input id="ppack" inputMode="numeric" value={f.packOf} invalid={!!errors.pack_of} placeholder="e.g. 6" onChange={(e) => set({ packOf: e.target.value.replace(/\D/g, '') }, 'pack_of')} />
             </Field>
@@ -269,13 +252,12 @@ function ProductForm({ companyId, companyName, companyLogo, product }: { company
           <Card className="p-4">
             <ProductImage path={images[0]} name={f.name || 'Product'} className="aspect-[4/5] w-full" />
             <p className="mt-3 font-display text-lg leading-snug font-medium">{f.name.trim() || 'Product name'}</p>
-            <p className="tabular mt-1 text-sm"><b>{Number(f.rate) > 0 ? money(Number(f.rate)) : '₹—'}</b> /pc {Number(f.mrp) > 0 && <span className="text-ink-mute">· MRP {money(Number(f.mrp))}</span>}</p>
             {colours.length > 0 && <p className="mt-1 text-xs text-ink-mute">{colours.join(' · ')}</p>}
             <div className="mt-3 space-y-1.5">
               {sizes.length ? sizes.map((s) => (
                 <div key={s} className="flex justify-between rounded-lg bg-paper-2 px-3 py-1.5 text-xs">
                   <span className="font-bold">{s}</span>
-                  <span className="tabular text-ink-soft">pack of {f.packOf || '—'}{perPack ? ` · ${money(perPack)}` : ''}</span>
+                  <span className="tabular text-ink-soft">pack of {f.packOf || '—'} pcs</span>
                 </div>
               )) : <p className="text-xs text-ink-mute">Sizes you add appear here.</p>}
             </div>
